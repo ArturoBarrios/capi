@@ -1,0 +1,42 @@
+# macOS system files
+.DS_Store
+
+# Environment variables
+.env
+
+# Node modules
+node_modules/
+
+# Build output
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Prisma generated files (optional, if you want to ignore)
+prisma/generated/
+
+# Optional: Prisma client generated inside node_modules usually ignored, but if you generate elsewhere:
+# prisma/client/
+
+# TypeScript build files
+*.tsbuildinfo
+
+# IDE/editor specific files
+.vscode/
+.idea/
+
+# Lock files (usually committed, but can be ignored if you want)
+# package-lock.json
+# yarn.lock
+
+# Misc config files you might want to track
+# eslint.config.mjs
+# nest-cli.json
+# tsconfig.json
+# tsconfig.build.json
+
+# Test output or coverage (if applicable)
+coverage/

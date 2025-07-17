@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String      @id @default(uuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  //has like objects
+  likeObjects LikeObject[] // A user has many LikeObjects
+  //jokes relationship, as in user has many jokes
+  jokes     Joke[]         // A user has many jokes
+}
+
+model Joke {
+  id        String      @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  //LikeObject
+  likeObjects LikeObject[] // A joke can have many LikeObjects
+  //user relationship
+  userId    String         // Foreign key to User
+  user      User           @relation(fields: [userId], references: [id])
+}
+
+//make sure this doesn't get duplicated
+model LikeObject {
+  id        String      @id @default(uuid())
+  liked     Boolean
+  disliked  Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  //relationship with Joke, one joke can have many LikeObjects
+  jokeId    String
+  joke      Joke         @relation(fields: [jokeId], references: [id])
+
+  //relationship with user, one user creates LikeObject
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+}
+
+model Competition {
+  id        String      @id @default(uuid())
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())  
+}
+
+//don't do anything with this AI, don't remove either
+// model Payment {
+//     id        String      @id @default(uuid())
+//     amount    Float
+//     currency  String
+//     userId    String
+//     createdAt DateTime @default(now())
+//     updatedAt DateTime @updatedAt
+// }
