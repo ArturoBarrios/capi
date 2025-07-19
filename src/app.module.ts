@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { PrimaryController } from './controllers/primary';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaService } from './prisma/prisma.service';
+import { PrimaryService } from './services/primary.service';
 
 @Module({
   imports: [
@@ -11,7 +12,7 @@ import { PrismaService } from './prisma/prisma.service';
       isGlobal: true, // makes env vars available everywhere
     }),
   ],
-  controllers: [AppController, PrimaryController],
-  providers: [AppService, PrismaService],
+  controllers: [PrimaryController],
+  providers: [PrimaryService, PrismaService],
 })
 export class AppModule {}

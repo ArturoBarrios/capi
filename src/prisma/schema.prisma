@@ -9,18 +9,25 @@ datasource db {
 
 model User {
   id        String      @id @default(uuid())
-  name      String
-  email     String   @unique
+  username      String
+  password String
+  //this means if a user created it themselves
+  //there's points where a user can create a user for a professional comedian
+  //professional comedian will have to create their own password...
+  artificiallyCreated   Boolean   @default(true)  
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
   //has like objects
   likeObjects LikeObject[] // A user has many LikeObjects
   //jokes relationship, as in user has many jokes
   jokes     Joke[]         // A user has many jokes
+  jokeComments JokeComment[] 
+  
 }
 
 model Joke {
   id        String      @id @default(uuid())
+  //make content so it stores new line characters(FE and BE problem)
   content   String
   createdAt DateTime @default(now())
   //LikeObject
@@ -28,13 +35,15 @@ model Joke {
   //user relationship
   userId    String         // Foreign key to User
   user      User           @relation(fields: [userId], references: [id])
+  jokeComments JokeComment[] 
+  categories Category[] 
+  
 }
 
 //make sure this doesn't get duplicated
 model LikeObject {
   id        String      @id @default(uuid())
-  liked     Boolean
-  disliked  Boolean
+  liked     Boolean  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   //relationship with Joke, one joke can have many LikeObjects
@@ -44,6 +53,28 @@ model LikeObject {
   //relationship with user, one user creates LikeObject
   userId    String
   user      User         @relation(fields: [userId], references: [id])
+}
+
+model Category {
+  id       String      @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  //jokes relationship, one category can have many jokes
+  jokes     Joke[]         // A category has many Jokes
+
+}
+
+model JokeComment {
+  id       String      @id @default(uuid())
+  userId   String
+  jokeId   String
+  content  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  joke      Joke           @relation(fields: [jokeId], references: [id])
+  user      User           @relation(fields: [userId], references: [id])
+  
+  
 }
 
 model Competition {
