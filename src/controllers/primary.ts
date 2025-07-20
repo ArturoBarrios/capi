@@ -3,7 +3,7 @@ import { Controller, Get, Post, Body } from "@nestjs/common";
 import { PrimaryService } from "../services/primary.service";
 import { CreateUserDto } from "../dto/create-user.dto";
 import { UserResponseDto } from "../dto/user-response.dto";
-import { CreateJokeDto } from "../dto/create-joke.dto";
+import { CreateJokeDto, UpdateJokeDto } from "../dto/create-joke.dto";
 import { JokeResponseDto } from "../dto/joke-response.dto";
 import { CreateLikeObjectDto } from '../dto/create-like-object.dto';
 import { LikeObjectResponseDto } from '../dto/like-object-response.dto';
@@ -42,6 +42,17 @@ export class PrimaryController {
       content: newJoke.content,
       createdAt: newJoke.createdAt,
       userId: newJoke.userId,
+    };
+  }
+  @Post("update-jokes")
+  async updateJokes(@Body() dto: UpdateJokeDto): Promise<JokeResponseDto> {
+    const updatedJoke = await this.primaryService.updateJoke(dto);
+
+    return {
+      id: updatedJoke.id,
+      content: updatedJoke.content,
+      createdAt: updatedJoke.createdAt,
+      userId: updatedJoke.userId,
     };
   }
 @Post('like-objects')

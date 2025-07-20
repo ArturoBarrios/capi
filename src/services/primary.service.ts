@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from '../dto/create-user.dto';
-import { CreateJokeDto } from '../dto/create-joke.dto';
+import { CreateJokeDto, UpdateJokeDto } from '../dto/create-joke.dto';
 import { CreateLikeObjectDto } from '../dto/create-like-object.dto';
 
 @Injectable()
@@ -31,6 +31,21 @@ export class PrimaryService {
     data: {
       content: dto.content,
       userId: dto.userId,
+    },
+  });
+}
+  
+async updateJoke(dto: UpdateJokeDto) {
+  return this.prisma.joke.update({
+    where: {
+      id: dto.id,
+    },
+    data: {      
+      categories: dto.categories
+        ? {
+            set: dto.categories.map((id: string) => ({ id }))
+          }
+        : undefined
     },
   });
 }
