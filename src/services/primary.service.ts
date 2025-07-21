@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { CreateJokeDto, UpdateJokeDto } from '../dto/create-joke.dto';
 import { CreateLikeObjectDto } from '../dto/create-like-object.dto';
+import { CreateCategoryDto } from 'src/dto/create-category.dto';
 
 @Injectable()
 export class PrimaryService {
@@ -26,6 +27,15 @@ export class PrimaryService {
     });
   }
 
+  getJokes() { 
+    return this.prisma.joke.findMany({
+      include: {
+        user: true,
+        categories: true,
+      },
+    });
+  }
+
   async  deleteAllUsersAndJokes() {
   // Delete LikeObjects and JokeComments first (they depend on Joke/User)
   await this.prisma.likeObject.deleteMany({});
@@ -45,8 +55,27 @@ export class PrimaryService {
     data: {
       content: dto.content,
       userId: dto.userId,
+      categories: {
+        connect: dto.categories?.map((id: string) => ({ id })),
+      },
     },
   });
+}
+
+async createCategory(dto: CreateCategoryDto){
+  // Check if category already exists
+  const existingCategory = await this.prisma.category.findFirst({
+    where: { name: dto.name },
+  });
+  if (existingCategory) {
+    return existingCategory;
+  }
+  return this.prisma.category.create({
+    data: {
+      name: dto.name,
+    }
+  })
+
 }
   
 async updateJoke(dto: UpdateJokeDto) {

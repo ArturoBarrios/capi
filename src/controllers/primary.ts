@@ -45,6 +45,11 @@ export class PrimaryController {
     };
   }
 
+  @Get("jokes")
+  async getJokes() {
+    return this.primaryService.getJokes();
+  }
+  
   @Post("jokes")
   async createJoke(@Body() dto: CreateJokeDto): Promise<JokeResponseDto> {
     const newJoke = await this.primaryService.createJoke(dto);

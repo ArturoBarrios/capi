@@ -2,6 +2,7 @@
 export class CreateJokeDto {
   content: string;
   userId: string;
+  categories?: string[];
 }
 
 export class UpdateJokeDto {    
