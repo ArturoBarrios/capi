@@ -1,8 +1,19 @@
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
+import { CreateUserDto } from 'src/dto/create-user.dto';
+import { CreateJokeDto } from 'src/dto/create-joke.dto';
+import { UserResponseDto } from 'src/dto/user-response.dto';
+import { JokeResponseDto } from 'src/dto/joke-response.dto';
+import * as dotenv from 'dotenv';
 
-const SCRAPED_JOKES_URL = 'http://localhost:8000/get-scraped-jokes';
+dotenv.config();
+const SITE_URL = process.env.SITE_URL || 'http://localhost:4000';
+const SCRAPE_SITE_URL = process.env.SCRAPE_SITE_URL || 'http://localhost:8000';
+
+const SCRAPED_JOKES_URL = SCRAPE_SITE_URL + '/get-scraped-jokes';
+const USERS_ENDPOINT_URL = SITE_URL + '/primary/users';
+const JOKES_ENDPOINT_URL = SITE_URL + '/primary/jokes';
 
 export async function fetchAndSaveInitialJokeData() {
   try {
@@ -25,7 +36,7 @@ export async function fetchAndSaveInitialJokeData() {
   }
 }
 
-function parseAndLogJokes(data: string) {
+async function parseAndLogJokes(data: string) {
   const jokesArray: { category: string; username: string; joke: string }[] = [];
   const categoryBlocks = data.split('\n--- ').filter(Boolean);
 
@@ -57,10 +68,37 @@ function parseAndLogJokes(data: string) {
         : jokeBlock.trim();
 
       jokesArray.push({ category: categoryName, username, joke: jokeText });
+
+      // Create user via API
+      const createUserDto = {
+        username: "Default",
+        password: 'password',
+        artificiallyCreated: true,
+        createdAt: new Date().toISOString(),
+      };
+      let createdUser;
+      try {
+        const userRes = await axios.post(USERS_ENDPOINT_URL, createUserDto);
+        createdUser = userRes.data;
+      } catch (err) {
+        console.error(`Failed to create user ${username}:`, err.response?.data || err.message);
+        continue;
+      }
+
+      // Create joke via API
+      const createJokeDto = {
+        content: jokeText,
+        userId: createdUser.id,
+        // categories: [categoryId], // Add category support if needed
+      };
+      try {
+        const jokeRes = await axios.post(JOKES_ENDPOINT_URL, createJokeDto);
+        console.log('Created joke:', jokeRes.data);
+      } catch (err) {
+        console.error(`Failed to create joke for user ${username}:`, err.response?.data || err.message);
+      }
     }
   }
-
-  console.log('Parsed jokes array:', jokesArray);
 
   // Write result to scraped-jokes-results.txt
   const resultsPath = path.join(process.cwd(), 'src', 'data', 'scraped-jokes-results.txt');

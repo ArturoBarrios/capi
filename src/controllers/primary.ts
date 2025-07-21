@@ -7,14 +7,26 @@ import { CreateJokeDto, UpdateJokeDto } from "../dto/create-joke.dto";
 import { JokeResponseDto } from "../dto/joke-response.dto";
 import { CreateLikeObjectDto } from '../dto/create-like-object.dto';
 import { LikeObjectResponseDto } from '../dto/like-object-response.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Controller("primary")
 export class PrimaryController {
-  constructor(private primaryService: PrimaryService) {}
+  constructor(
+    private configService: ConfigService,
+    private primaryService: PrimaryService
+
+  ) {}
 
   @Get("users")
   async getUsers() {
     return this.primaryService.getUsers();
+  }
+
+  @Post("delete-all-users-and-jokes")
+  async deleteAllUsersAndJokes() {
+
+    await this.primaryService.deleteAllUsersAndJokes();
+    return { message: "All users and jokes deleted." };
   }
 
   @Post("users")

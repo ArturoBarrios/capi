@@ -26,6 +26,20 @@ export class PrimaryService {
     });
   }
 
+  async  deleteAllUsersAndJokes() {
+  // Delete LikeObjects and JokeComments first (they depend on Joke/User)
+  await this.prisma.likeObject.deleteMany({});
+  await this.prisma.jokeComment.deleteMany({});
+  // Remove relations between jokes and categories (if using many-to-many)
+  // If you need to remove category relations, handle it via the join table or adjust your schema accordingly.
+  // For now, just remove this updateMany call as 'categories' is not a valid field here.
+  // Delete jokes
+  await this.prisma.joke.deleteMany({});
+  // Delete users
+  await this.prisma.user.deleteMany({});
+  console.log('All users and jokes deleted.');
+}
+
   async createJoke(dto: CreateJokeDto) {
   return this.prisma.joke.create({
     data: {
@@ -51,18 +65,32 @@ async updateJoke(dto: UpdateJokeDto) {
 }
 
   async createUser(dto: CreateUserDto) {
-    return this.prisma.user.create({
-      data: {
-        username: dto.username,
-        password: dto.password,
-        artificiallyCreated: dto.artificiallyCreated ?? true,
-      },
-      include: {
-        likeObjects: true,
-        jokes: true,
-      },
-    });
+  // Check if user already exists by username
+  const existingUser = await this.prisma.user.findFirst({
+    where: { username: dto.username },
+    include: {
+      likeObjects: true,
+      jokes: true,
+    },
+  });
+
+  if (existingUser) {
+    return existingUser;
   }
+
+  // Otherwise, create new user
+  return this.prisma.user.create({
+    data: {
+      username: dto.username,
+      password: dto.password,
+      artificiallyCreated: dto.artificiallyCreated ?? true,
+    },
+    include: {
+      likeObjects: true,
+      jokes: true,
+    },
+  });
+}
 
   async createLikeObject(dto: CreateLikeObjectDto) {
   return this.prisma.likeObject.create({
