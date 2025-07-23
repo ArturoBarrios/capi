@@ -22,6 +22,7 @@ model User {
   //jokes relationship, as in user has many jokes
   jokes     Joke[]         // A user has many jokes
   jokeComments JokeComment[] 
+  retweets   Retweet[]
   
 }
 
@@ -32,12 +33,24 @@ model Joke {
   createdAt DateTime @default(now())
   //LikeObject
   likeObjects LikeObject[] // A joke can have many LikeObjects
+  retweetObjects Retweet[]
   //user relationship
   userId    String         // Foreign key to User
   user      User           @relation(fields: [userId], references: [id])
   jokeComments JokeComment[] 
   categories Category[] 
-  
+  underlyingLikes Int @default(0) // This will store the number of likes for the joke
+}
+
+model Retweet {
+  id      String   @id @default(uuid())
+  user    User     @relation(fields: [userId], references: [id])
+  userId  String
+  joke    Joke     @relation(fields: [jokeId], references: [id])
+  jokeId  String
+  createdAt DateTime @default(now())
+  retweeted Boolean
+  @@unique([userId, jokeId]) // Prevent duplicate retweets
 }
 
 //make sure this doesn't get duplicated

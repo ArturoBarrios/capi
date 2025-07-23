@@ -85,7 +85,7 @@ async function parseAndLogJokes(data: string, primaryService: PrimaryService) {
 
       // Create or get user via service
       const createUserDto = {
-        username: "Default",
+        username: "@TheLaughFactory",
         password: "password",
         artificiallyCreated: true,
         createdAt: new Date().toISOString(),

@@ -4,6 +4,7 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { CreateJokeDto, UpdateJokeDto } from '../dto/create-joke.dto';
 import { CreateLikeObjectDto } from '../dto/create-like-object.dto';
 import { CreateCategoryDto } from 'src/dto/create-category.dto';
+import { CreateRetweetObjectDto } from 'src/dto/create-retweet-object.dto';
 
 @Injectable()
 export class PrimaryService {
@@ -11,6 +12,15 @@ export class PrimaryService {
 
   async hasDuplicate(jokeId: string, userId: string) {
     return this.prisma.likeObject.findFirst({
+      where: {
+        jokeId,
+        userId,
+      },
+    });
+  }
+  
+  async hasDuplicateRetweet(jokeId: string, userId: string) {
+    return this.prisma.retweet.findFirst({
       where: {
         jokeId,
         userId,
@@ -27,11 +37,24 @@ export class PrimaryService {
     });
   }
 
+  getUserByUsername(username: string) {
+    return this.prisma.user.findFirst({
+      where: { username: username },
+      include: {
+        likeObjects: true,
+        jokes: true,
+      },
+    });
+  }
+
   getJokes() { 
+    console.log('Fetching all jokes');
     return this.prisma.joke.findMany({
       include: {
         user: true,
         categories: true,
+        likeObjects: true,
+        retweetObjects: true,
       },
     });
   }
@@ -130,11 +153,31 @@ async updateJoke(dto: UpdateJokeDto) {
     },
   });
 }
+  
+async createRetweetObject(dto: CreateRetweetObjectDto) {
+  return this.prisma.retweet.create({
+    data: {
+      retweeted: dto.retweeted,
+      jokeId: dto.jokeId,
+      userId: dto.userId,
+    },
+  });
+}
   async updateLikeObject(dto: CreateLikeObjectDto,  dtoId: string ) {
   return this.prisma.likeObject.update({
     where: { id: dtoId },
     data: {
       liked: dto.liked,
+      jokeId: dto.jokeId,
+      userId: dto.userId,
+    },
+  });
+}
+  async updateRetweetObject(dto: CreateRetweetObjectDto,  dtoId: string ) {
+  return this.prisma.retweet.update({
+    where: { id: dtoId },
+    data: {
+      retweeted: dto.retweeted,
       jokeId: dto.jokeId,
       userId: dto.userId,
     },

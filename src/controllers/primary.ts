@@ -8,6 +8,8 @@ import { JokeResponseDto } from "../dto/joke-response.dto";
 import { CreateLikeObjectDto } from '../dto/create-like-object.dto';
 import { LikeObjectResponseDto } from '../dto/like-object-response.dto';
 import { ConfigService } from '@nestjs/config';
+import { CreateRetweetObjectDto } from "src/dto/create-retweet-object.dto";
+import { RetweetObjectResponseDto } from "src/dto/retweet-object-response.dto";
 
 @Controller("primary")
 export class PrimaryController {
@@ -21,6 +23,7 @@ export class PrimaryController {
   async getUsers() {
     return this.primaryService.getUsers();
   }
+
 
   @Post("delete-all-users-and-jokes")
   async deleteAllUsersAndJokes() {
@@ -49,16 +52,27 @@ export class PrimaryController {
   async getJokes() {
     return this.primaryService.getJokes();
   }
-  
+
   @Post("jokes")
   async createJoke(@Body() dto: CreateJokeDto): Promise<JokeResponseDto> {
-    const newJoke = await this.primaryService.createJoke(dto);
+    // ensure no more than 1000 jokes already exist
+    const jokeCount = await this.primaryService.getJokes().then(jokes => jokes.length);
+    if (jokeCount <= 1000) {
+      const newJoke = await this.primaryService.createJoke(dto);
+  
+      return {
+        id: newJoke.id,
+        content: newJoke.content,
+        createdAt: newJoke.createdAt,
+        userId: newJoke.userId,        
+      };
 
+    }
     return {
-      id: newJoke.id,
-      content: newJoke.content,
-      createdAt: newJoke.createdAt,
-      userId: newJoke.userId,
+      id: "",
+      content: "",
+      createdAt: new Date(),
+      userId: "",      
     };
   }
   @Post("update-jokes")
@@ -103,6 +117,39 @@ async createLikeObject(@Body() dto: CreateLikeObjectDto): Promise<LikeObjectResp
     updatedAt: newLikeObject.updatedAt,
     jokeId: newLikeObject.jokeId,
     userId: newLikeObject.userId,
+  };
+}
+
+@Post('retweet-objects')
+async createRetweetObject(@Body() dto: CreateRetweetObjectDto): Promise<RetweetObjectResponseDto> {
+  const duplicate = await this.primaryService.hasDuplicateRetweet(dto.jokeId, dto.userId);
+  if (duplicate) {
+    if(duplicate.retweeted === dto.retweeted){
+        return {
+            id: duplicate.id,
+            retweeted: duplicate.retweeted,
+            response: "You already " + (dto.retweeted ? "retweeted" : "unretweeted") + " this joke",
+        };
+    }
+    else{
+        // If the like status is different, update the existing like object
+        this.primaryService.updateRetweetObject(dto, duplicate.id);
+        return {
+            id: duplicate.id,
+            retweeted: dto.retweeted,
+            response: "Retweeted status updated",
+        }
+    }
+  }
+
+  const newRetweetedObject = await this.primaryService.createRetweetObject(dto);
+  return {
+    id: newRetweetedObject.id,
+    retweeted: newRetweetedObject.retweeted,
+    response: "Retweet object created successfully",
+    createdAt: newRetweetedObject.createdAt,    
+    jokeId: newRetweetedObject.jokeId,
+    userId: newRetweetedObject.userId,
   };
 }
 
