@@ -9,3 +9,8 @@ export class UpdateJokeDto {
     id: string;
     categories?: string[];
 }
+
+export class MinimalJokeDto {
+  id: string;
+  content: string;
+}
