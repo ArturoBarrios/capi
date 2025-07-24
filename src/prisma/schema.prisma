@@ -40,6 +40,9 @@ model Joke {
   jokeComments JokeComment[] 
   categories Category[] 
   underlyingLikes Int @default(0) // This will store the number of likes for the joke
+  integrityCheck Boolean @default(false) 
+  aiFunnyScore Int @default(0) // Score given by AI for how funny the joke is
+
 }
 
 model Retweet {

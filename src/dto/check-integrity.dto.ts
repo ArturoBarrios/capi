@@ -5,6 +5,11 @@ export class CheckIntegrityDto {
     limit? : number;
 }
 
+export class CheckIntegrityResponseDto {
+    success: boolean;
+    message?: string;   
+}
+
 export class AiCheckResponseDto {
     success: boolean;
     message?: string;   
