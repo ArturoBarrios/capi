@@ -34,18 +34,44 @@ export class PrimaryController {
 
   @Post("users")
   async createUser(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
-    const newUser = await this.primaryService.createUser(dto);
+    try {
+      const userCount = await this.primaryService.getUsers().then(users => users.length);
+      if (userCount <= 1000) {
+        const newUser = await this.primaryService.createUser(dto);
+  
+        return {
+          id: newUser.id,
+          username: newUser.username,
+          password: newUser.password,
+          artificiallyCreated: newUser.artificiallyCreated,
+          createdAt: newUser.createdAt,
+          updatedAt: newUser.updatedAt ?? undefined,
+          likeObjects: newUser.likeObjects || [],
+          jokes: newUser.jokes || [],
+          success: true,
+          message: "User created successfully",
+        };
+      }
+      else{
+        return {
+          success: false,
+          message: "User limit reached. Cannot create more users right now.",
+        
+        }
+      }
 
-    return {
-      id: newUser.id,
-      username: newUser.username,
-      password: newUser.password,
-      artificiallyCreated: newUser.artificiallyCreated,
-      createdAt: newUser.createdAt,
-      updatedAt: newUser.updatedAt ?? undefined,
-      likeObjects: newUser.likeObjects || [],
-      jokes: newUser.jokes || [],
-    };
+    } catch (error) {
+
+      console.error("Error creating user:", error);
+      
+      return {
+        success: false,
+        message: "Error creating user: " + error.message,
+      };
+    }
+
+
+
   }
 
   @Get("jokes")

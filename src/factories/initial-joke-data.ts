@@ -15,9 +15,11 @@ export async function fetchAndSaveInitialJokeData() {
 
   try {
     // Fetch jokes from your scraping endpoint (still using axios)
+    console.log("Fetching initial joke data...");
     const SCRAPE_SITE_URL =
-      process.env.SCRAPE_SITE_URL || "http://localhost:8000";
+      process.env.SCRAPE_SITE_URL;
     const SCRAPED_JOKES_URL = SCRAPE_SITE_URL + "/get-scraped-jokes";
+    console.log(`Fetching jokes from: ${SCRAPED_JOKES_URL}`);
     const response = await (
       await import("axios")
     ).default.get(SCRAPED_JOKES_URL, { responseType: "text" });
