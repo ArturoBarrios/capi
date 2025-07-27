@@ -17,6 +17,8 @@ export class CreateUserDto {
   @IsString()
   password: string;
 
+  botSenseOfHumorType?: String //you are 27 years old, doing great in life, you are a know it all, you are a liberal, etc....
+
   @IsOptional()
   @IsBoolean()
   artificiallyCreated?: boolean;

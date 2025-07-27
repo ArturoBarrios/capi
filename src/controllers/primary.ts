@@ -25,6 +25,8 @@ export class PrimaryController {
   }
 
 
+
+
   @Post("delete-all-users-and-jokes")
   async deleteAllUsersAndJokes() {
 

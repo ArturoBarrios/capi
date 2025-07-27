@@ -9,6 +9,9 @@ import {
 import { AIService } from "./ai.service";
 import * as fs from "fs";
 import * as path from "path";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 @Injectable()
 export class AnalyzersService {
@@ -67,8 +70,31 @@ export class AnalyzersService {
           await this.ai.aiJokeCheck(aiCheckParams);
         console.log(
           `AI check confidence for joke "${joke.content}":`,
-          aiJokeCheckResponse.score
-        );        
+          aiJokeCheckResponse          
+        );    
+        console.log("aiJokeCheckResponse.success:", aiJokeCheckResponse.success); 
+        console.log("aiJokeCheckResponse.score:", aiJokeCheckResponse.score);
+           
+
+        const scoreLimit = parseInt(process.env.JOKE_INTEGRITY_DELETE_SCORE ?? "50");
+        if(aiJokeCheckResponse.success && aiJokeCheckResponse.score &&
+            aiJokeCheckResponse.score  < scoreLimit) {
+                console.log(`Joke "${joke.content}" failed AI integrity check.`);
+                // delete joke
+                 await this.prisma.likeObject.deleteMany({
+                  where: { jokeId: joke.id }
+                });
+                await this.prisma.retweet.deleteMany({
+                  where: { jokeId: joke.id }
+                });
+                // Now delete the joke itself
+                await this.prisma.joke.delete({
+                  where: { id: joke.id }
+                });
+
+                console.log(`Deleted joke with ID: ${joke.id} and all related data`);
+
+        }
       }
 
       return { 
@@ -83,6 +109,7 @@ export class AnalyzersService {
       };
     }
   }
+
   async rateJokeWithAI() { 
     
   }

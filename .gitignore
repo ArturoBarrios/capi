@@ -1,6 +1,8 @@
 # macOS system files
 .DS_Store
 
+botPersonalities.txt
+
 # Environment variables
 .env
 

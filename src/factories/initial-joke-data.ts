@@ -9,6 +9,79 @@ import { CreateJokeDto } from "src/dto/create-joke.dto";
 
 dotenv.config();
 
+async function fetchAndSaveInitialBotData() {
+  const app = await NestFactory.createApplicationContext(AppModule);
+  const primaryService = app.get(PrimaryService);
+
+  try {
+    console.log("Fetching initial bot data...");
+    
+    // Read botPersonalities.txt from root directory
+    const botDataPath = path.join(process.cwd(), "botPersonalities.txt");
+    const botDataText = fs.readFileSync(botDataPath, "utf8");
+    
+    console.log("Starting to parse bot personalities...");
+    await parseAndCreateBots(botDataText, primaryService);
+    
+    console.log("Bot creation complete.");
+  } catch (error) {
+    console.error("Failed to fetch or create bot data:", error);
+  }
+}
+
+async function parseAndCreateBots(data: string, primaryService: PrimaryService) {
+  const botPersonalities = data.split('\n\n').filter(section => section.trim().length > 0);
+  
+  for (const botSection of botPersonalities) {
+    const lines = botSection.split('\n').filter(line => line.trim().length > 0);
+    
+    let username = '';
+    let password = '';
+    let botSenseOfHumorType = '';
+    let otherProperties: any = {};
+    
+    for (const line of lines) {
+      const [key, ...valueParts] = line.split(':');
+      const value = valueParts.join(':').trim();
+      
+      switch (key.toLowerCase().trim()) {
+        case 'username':
+          username = value;
+          break;
+        case 'password':
+          password = value;
+          break;
+        case 'botsenseofhumortype':
+          botSenseOfHumorType = value;
+          break;
+        default:
+          otherProperties[key.trim()] = value;
+          break;
+      }
+    }
+    
+    if (username && password && botSenseOfHumorType) {
+      const createUserDto = {
+        username,
+        password,
+        botSenseOfHumorType,
+        artificiallyCreated: true,
+        createdAt: new Date().toISOString(),
+        ...otherProperties
+      };
+      
+      try {
+        const createdBot = await primaryService.createUser(createUserDto);
+        console.log(`Created bot: ${username} with humor type: ${botSenseOfHumorType}`);
+      } catch (err) {
+        console.error(`Failed to create bot ${username}:`, err.message);
+      }
+    } else {
+      console.warn(`Skipping bot due to missing required fields: username=${username}, password=${password}, botSenseOfHumorType=${botSenseOfHumorType}`);
+    }
+  }
+}
+
 export async function fetchAndSaveInitialJokeData() {
   const app = await NestFactory.createApplicationContext(AppModule);
   const primaryService = app.get(PrimaryService);
@@ -151,5 +224,6 @@ async function parseAndLogJokes(data: string, primaryService: PrimaryService) {
 }
 
 if (require.main === module) {
-  fetchAndSaveInitialJokeData();
+  // fetchAndSaveInitialJokeData();
+  fetchAndSaveInitialBotData();
 }

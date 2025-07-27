@@ -1,0 +1,5 @@
+JokePromptStart
+Given this personality: {personality}. 
+Create a joke 100 words maximum
+based off of this news story: {story}
+JokePromptEnd

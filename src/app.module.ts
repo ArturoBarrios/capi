@@ -6,9 +6,11 @@ import { PrismaService } from './prisma/prisma.service';
 import { PrimaryService } from './services/primary.service';
 import { AuthService } from './services/auth.service';
 import { AuthController } from './controllers/auth.controller';
+import { BotsController } from './controllers/bots';
 import { AnalyzersController } from './controllers/analyzers';
 import { AnalyzersService } from './services/analyzers.service';
 import { AIService } from './services/ai.service';
+import { BotsService } from './services/bots.service';
 
 @Module({
   imports: [
@@ -24,7 +26,7 @@ import { AIService } from './services/ai.service';
       inject: [ConfigService],
     }),
   ],
-  controllers: [PrimaryController, AuthController, AnalyzersController],
-  providers: [PrimaryService, AuthService, PrismaService, AnalyzersService, AIService],
+  controllers: [PrimaryController, AuthController, AnalyzersController, BotsController],
+  providers: [PrimaryService, AuthService, PrismaService, AnalyzersService, AIService, BotsService],
 })
 export class AppModule {}

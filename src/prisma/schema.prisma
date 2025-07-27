@@ -23,7 +23,7 @@ model User {
   jokes     Joke[]         // A user has many jokes
   jokeComments JokeComment[] 
   retweets   Retweet[]
-  
+  botSenseOfHumorType String? //you are 27 years old, doing great in life, you are a know it all, you are a liberal, etc....
 }
 
 model Joke {
@@ -42,6 +42,7 @@ model Joke {
   underlyingLikes Int @default(0) // This will store the number of likes for the joke
   integrityCheck Boolean @default(false) 
   aiFunnyScore Int @default(0) // Score given by AI for how funny the joke is
+  
 
 }
 

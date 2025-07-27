@@ -37,6 +37,19 @@ export class PrimaryService {
     });
   }
 
+    getBotUsers() {
+    return this.prisma.user.findMany({
+      where: {
+        artificiallyCreated: true,
+      },
+      
+      include: {
+        likeObjects: true,
+        jokes: true,        
+      },
+    });
+  }
+
   getUserByUsername(username: string) {
     return this.prisma.user.findFirst({
       where: { username: username },
@@ -55,6 +68,14 @@ export class PrimaryService {
         categories: true,
         likeObjects: true,
         retweetObjects: true,
+      },
+    });
+  }
+
+  deleteUsersByIds(userIds: string[]) {
+    return this.prisma.user.deleteMany({
+      where: {
+        id: { in: userIds },
       },
     });
   }
