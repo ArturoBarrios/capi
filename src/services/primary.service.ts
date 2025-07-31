@@ -5,10 +5,18 @@ import { CreateJokeDto, UpdateJokeDto } from '../dto/create-joke.dto';
 import { CreateLikeObjectDto } from '../dto/create-like-object.dto';
 import { CreateCategoryDto } from 'src/dto/create-category.dto';
 import { CreateRetweetObjectDto } from 'src/dto/create-retweet-object.dto';
+import { BotsService } from './bots.service';
 
 @Injectable()
 export class PrimaryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+
+  ) {}
+
+  async checkUsersOnline() {
+    
+  }
 
   async hasDuplicate(jokeId: string, userId: string) {
     return this.prisma.likeObject.findFirst({
@@ -30,6 +38,9 @@ export class PrimaryService {
 
   getUsers() {
     return this.prisma.user.findMany({
+      where: {
+        artificiallyCreated: false, 
+      },
       include: {
         likeObjects: true,
         jokes: true,
@@ -41,6 +52,7 @@ export class PrimaryService {
     return this.prisma.user.findMany({
       where: {
         artificiallyCreated: true,
+        
       },
       
       include: {
@@ -63,6 +75,39 @@ export class PrimaryService {
   getJokes() { 
     console.log('Fetching all jokes');
     return this.prisma.joke.findMany({
+      include: {
+        user: true,
+        categories: true,
+        likeObjects: true,
+        retweetObjects: true,
+      },
+    });
+  }
+
+  jokeSeenByUser(jokeId: string, userId: string){
+    return this.prisma.joke.update({
+      where: { id: jokeId },
+      data: {
+        jokeSeenByUserIds: {
+          push: userId,
+        },
+      },
+    });
+  }
+
+    getJokesForUser(userId: string) {
+    return this.prisma.joke.findMany({
+      where: { 
+        forUsers: {
+          has: userId
+        },
+        
+        // NOT: {
+        //   jokeSeenByUserIds: {
+        //     has: userId
+        //   }
+        // }
+      },
       include: {
         user: true,
         categories: true,
@@ -102,6 +147,7 @@ export class PrimaryService {
       categories: {
         connect: dto.categories?.map((id: string) => ({ id })),
       },
+      forUsers: dto.forUsers || [], // Add forUsers field
     },
   });
 }

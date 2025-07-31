@@ -1,0 +1,14 @@
+TakePromptStart
+Given this personality: {personality}.
+Create a powerful social media take (max 50 words)
+based on this news story: {story}.
+
+Write something controversial, clever, or emotionally gripping.
+It should feel designed to go viral—think: bold opinion, brutal honesty, sharp wit, or punchy cultural insight.
+No disclaimers, no fluff. Just a concise, high-impact post.
+
+When you create the take, just output the take—no explanation, no labels.
+No instructions, just the take in one single text block.
+
+TakePromptEnd
+

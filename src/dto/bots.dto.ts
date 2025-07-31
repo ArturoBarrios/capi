@@ -9,5 +9,19 @@ export class DestroyBotsDto {
     userIds: [string];
 }
 
+export class StartBotsDto {
+    jokesPerBot: number;
+    readNewsInterval: number;
+    
+}
+
+export class StartBotInteractionsDto {
+    userId: string;
+    totalJokes: number;
+    interval?: number;
+    botSenseOfHumorType?: string;
+    queueUrl?: string;
+}
+
 
 

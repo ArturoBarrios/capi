@@ -24,6 +24,84 @@ model User {
   jokeComments JokeComment[] 
   retweets   Retweet[]
   botSenseOfHumorType String? //you are 27 years old, doing great in life, you are a know it all, you are a liberal, etc....
+  isRunningBotInteractions Boolean @default(false) // This will be true if the bot is running interactions
+  personality String?
+}
+
+model NewsContent {
+  id        String      @id @default(uuid())
+  title     String
+  summary   String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+  news News[] @relation("NewsToNewsContent") //this acts as context
+  subContent SubContent[] // This is the generated content that will be dynamic
+
+  
+}
+
+model SubContent {
+  id        String      @id @default(uuid())
+  title     String
+  summary   String
+  content   String
+  type      String // e.g., "article", "video", "podcast"
+  newsContentId String?
+  newsContent   NewsContent? @relation(fields: [newsContentId], references: [id])
+  
+  
+}
+
+model News {
+  id        String      @id @default(uuid())
+  title     String
+  summary   String
+  aiTitle String? // AI-generated title
+  aiSummary String? // AI-generated summary
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+  newsContent NewsContent[] @relation("NewsToNewsContent")
+  
+  socialMediaConnections SocialMediaConnections[] @relation("SocialMediaConnections")
+  newsConnected NewsConnection[] @relation("NewsConnections")
+  // relevant Int @default(0) //how relevant is this right now
+}
+
+model NewsConnection {
+  id            String   @id @default(uuid())
+  fromNewsId    String
+  toNewsId      String
+  relationshipType String? // e.g., "related", "follow-up", "contradicts"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime? @updatedAt
+  fromNews      News     @relation("NewsConnections", fields: [fromNewsId], references: [id])
+  
+  @@unique([fromNewsId, toNewsId]) // Prevent duplicate connections
+}
+
+model SocialMedia {
+  id        String      @id @default(uuid())
+  platform  String      // e.g., "Twitter", "Facebook", "Instagram"
+  username  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+  socialMediaConnections SocialMediaConnections[] @relation("SocialMediaConnections")
+
+}
+
+model SocialMediaConnections {
+  id            String   @id @default(uuid())
+  socialMediaId String
+  newsId        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime? @updatedAt
+  socialMedia   SocialMedia @relation("SocialMediaConnections", fields: [socialMediaId], references: [id])
+  news          News         @relation("SocialMediaConnections", fields: [newsId], references: [id])
+  
+  @@unique([socialMediaId, newsId]) // Prevent duplicate connections
+
 }
 
 model Joke {
@@ -42,7 +120,11 @@ model Joke {
   underlyingLikes Int @default(0) // This will store the number of likes for the joke
   integrityCheck Boolean @default(false) 
   aiFunnyScore Int @default(0) // Score given by AI for how funny the joke is
-  
+  isPublic Boolean @default(true) // Whether the joke is public or not
+  jokeSeenByUserIds String[] @default([]) // Array of user IDs who have seen the joke
+  // Array of user IDs for whom the joke 
+  // is specifically created
+  forUsers String[] @default([]) 
 
 }
 
@@ -101,6 +183,7 @@ model Competition {
   endDate   DateTime
   createdAt DateTime @default(now())  
 }
+
 
 //don't do anything with this AI, don't remove either
 // model Payment {

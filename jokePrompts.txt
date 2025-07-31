@@ -1,5 +1,9 @@
 JokePromptStart
 Given this personality: {personality}. 
-Create a joke 100 words maximum
-based off of this news story: {story}
+Create a joke 50 words maximum
+based off of this news story: {story}, 
+follow a real joke structure, with setup then punchline
+don't be afraid to be vile, nasty, and dark
+When you create the joke just output the joke with no helpers as one thing
+no instructions, just output the joke
 JokePromptEnd

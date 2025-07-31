@@ -3,6 +3,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { MinimalJokeDto } from "../dto/create-joke.dto";
 import { AiCheckDto, AiCheckResponseDto } from "../dto/check-integrity.dto";
 import axios from "axios";
+import { CreateNewsDto, SimilarContentDto } from "src/dto/news.dto";
 
 @Injectable()
 export class AIService {
@@ -10,8 +11,9 @@ export class AIService {
 
   private readonly ollamaUrl = "http://localhost:11434"; // Ollama's default port
 
-  async createAIJoke(prompt: string) {
+  async createAIJoke(prompt: string): Promise<string> {
     console.log("Creating AI joke with prompt:", prompt);
+    const res : string = "";
     try {
       const response = await axios.post(`${this.ollamaUrl}/api/generate`, {
         model: "llama3.2:3b",
@@ -24,23 +26,41 @@ export class AIService {
 
       if (response.status == 200 || response.statusText == "OK") {
         // For now, return a basic response
-        return {
-          success: true,
-          message: "Joke created successfully",
-          joke: response.data.response,
-        };
+        return response.data.response; 
       } else {
-        return {
-          success: false,
-          message: "Failed to create joke with AI",
-        };
+        return "Failed to create joke with AI";
       }
     } catch (error) {
       console.error("Error creating joke with AI:", error);
-      return {
-        success: false,
-        message: "something went wrong with the AI service",
-      };
+      return "Error creating  with AI";
+    }
+  }
+  
+ 
+
+  async createNews(dto: CreateNewsDto): Promise<CreateNewsDto> {
+    console.log("Creating AI news with:", dto);
+    const res : string = "";
+    try {
+      const response = await axios.post(`${this.ollamaUrl}/api/generate`, {
+        model: "llama3.2:3b",
+        prompt: dto.prompt,
+        stream: false,
+      });
+
+      // Parse the AI response (you'll need to handle the actual response format)
+      console.log("Ollama response:", response);
+
+      if (response.status == 200 || response.statusText == "OK") {
+        dto.success = true;
+        // For now, return a basic response
+        return dto; 
+      } else {
+        return dto;
+      }
+    } catch (error) {
+      console.error("Error creating news with AI:", error);
+      return dto;
     }
   }
 

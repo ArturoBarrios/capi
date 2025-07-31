@@ -2,6 +2,7 @@
 .DS_Store
 
 botPersonalities.txt
+jokePrompts.txt
 
 # Environment variables
 .env

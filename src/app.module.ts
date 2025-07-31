@@ -6,14 +6,18 @@ import { PrismaService } from './prisma/prisma.service';
 import { PrimaryService } from './services/primary.service';
 import { AuthService } from './services/auth.service';
 import { AuthController } from './controllers/auth.controller';
+import { NewsController } from './controllers/news.controller';
 import { BotsController } from './controllers/bots';
 import { AnalyzersController } from './controllers/analyzers';
 import { AnalyzersService } from './services/analyzers.service';
 import { AIService } from './services/ai.service';
 import { BotsService } from './services/bots.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { NewsService } from './services/news.service';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(), 
     ConfigModule.forRoot({
       isGlobal: true, // makes env vars available everywhere
     }),
@@ -26,7 +30,7 @@ import { BotsService } from './services/bots.service';
       inject: [ConfigService],
     }),
   ],
-  controllers: [PrimaryController, AuthController, AnalyzersController, BotsController],
-  providers: [PrimaryService, AuthService, PrismaService, AnalyzersService, AIService, BotsService],
+  controllers: [PrimaryController, AuthController, AnalyzersController, BotsController, NewsController],
+  providers: [PrimaryService, AuthService, PrismaService, AnalyzersService, AIService, BotsService, NewsService],
 })
 export class AppModule {}

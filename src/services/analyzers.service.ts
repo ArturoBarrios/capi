@@ -51,8 +51,7 @@ export class AnalyzersService {
         const promptTemplatePath = path.join(
           process.cwd(),
           "aiprompts",
-          "IsItAJokePrompts",
-          "prompt1.txt"
+          "news-quality-check-prompts.txt"
         );
         const promptTemplate = fs.readFileSync(promptTemplatePath, "utf8");
 

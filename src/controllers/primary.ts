@@ -80,6 +80,14 @@ export class PrimaryController {
   async getJokes() {
     return this.primaryService.getJokes();
   }
+  
+  @Get("jokes-v2")
+  async getJokesV2(@Body() dto: { userId: string }): Promise<JokeResponseDto[]> {
+    //get id    
+    console.log("Fetching jokesv2 for user:", dto.userId);
+    return this.primaryService.getJokesForUser(dto.userId);
+  }
+  
 
   @Post("jokes")
   async createJoke(@Body() dto: CreateJokeDto): Promise<JokeResponseDto> {
