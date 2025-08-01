@@ -6,9 +6,10 @@ import { CreateLikeObjectDto } from '../dto/create-like-object.dto';
 import { CreateCategoryDto } from 'src/dto/create-category.dto';
 import { CreateRetweetObjectDto } from 'src/dto/create-retweet-object.dto';
 import { BotsService } from './bots.service';
+import { UpdateGraphsDto } from 'src/dto/primary.dto';
 
 @Injectable()
-export class PrimaryService {
+export class PrimaryService { 
   constructor(
     private prisma: PrismaService,
 
@@ -17,6 +18,24 @@ export class PrimaryService {
   async checkUsersOnline() {
     
   }
+
+    async updateGraphs(dto: UpdateGraphsDto) {
+        try{
+    
+        } catch (error) {
+          console.error("Error updating graphs:", error);
+          throw new Error("Error updating graphs");
+        }
+      }
+    async updateSubGraphs(dto: UpdateGraphsDto) {
+        try{
+    
+        } catch (error) {
+          console.error("Error updating graphs:", error);
+          throw new Error("Error updating graphs");
+        }
+      }
+    
 
   async hasDuplicate(jokeId: string, userId: string) {
     return this.prisma.likeObject.findFirst({

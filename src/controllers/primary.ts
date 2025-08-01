@@ -10,6 +10,7 @@ import { LikeObjectResponseDto } from '../dto/like-object-response.dto';
 import { ConfigService } from '@nestjs/config';
 import { CreateRetweetObjectDto } from "src/dto/create-retweet-object.dto";
 import { RetweetObjectResponseDto } from "src/dto/retweet-object-response.dto";
+import { UpdateGraphsDto } from "src/dto/primary.dto";
 
 @Controller("primary")
 export class PrimaryController {
@@ -87,6 +88,16 @@ export class PrimaryController {
     console.log("Fetching jokesv2 for user:", dto.userId);
     return this.primaryService.getJokesForUser(dto.userId);
   }
+
+    @Post("update-graphs")
+    async updateGraphs(@Body() body: UpdateGraphsDto) {
+      try{
+  
+      } catch (error) {
+        console.error("Error updating graphs:", error);
+        throw new Error("Error updating graphs");
+      }
+    }
   
 
   @Post("jokes")

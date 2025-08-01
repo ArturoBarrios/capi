@@ -37,8 +37,10 @@ model NewsContent {
   updatedAt DateTime? @updatedAt
   news News[] @relation("NewsToNewsContent") //this acts as context
   subContent SubContent[] // This is the generated content that will be dynamic
-
-  
+  sourcesCount Int @default(0) 
+  updatePrompt String?
+  pointsPrompt String?
+  ignoreNews News[] @relation("CheckedNews") 
 }
 
 model SubContent {
@@ -63,7 +65,9 @@ model News {
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt
   newsContent NewsContent[] @relation("NewsToNewsContent")
+  checkedNews NewsContent[] @relation("CheckedNews")
   
+
   socialMediaConnections SocialMediaConnections[] @relation("SocialMediaConnections")
   newsConnected NewsConnection[] @relation("NewsConnections")
   // relevant Int @default(0) //how relevant is this right now

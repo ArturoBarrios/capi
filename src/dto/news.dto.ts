@@ -8,10 +8,17 @@ export class CreateNewsDto {
     success: boolean;
 }
 
-export class GetNewsDto {
+export class GetNewsForAnalysisDto {
     success: boolean;
     message?: string; 
-    NewsDto: NewsDto[];
+    forAnalysis? : boolean;
+    id: string;
+    newsDto?: NewsDto[];
+}
+export class GetNewsContentDto {
+    success: boolean;
+    message?: string; 
+    newsContents?: any[];
 }
 
 export class NewsDto {
@@ -26,8 +33,11 @@ export class NewsDto {
 }
 
 export class SimilarContentDto {
+    id: string;
     title: string;
     content: string;
-    similarNewsContentIds: String[]; 
+    similarNewsContentIds?: String[]; 
     success: boolean;
 }
+
+

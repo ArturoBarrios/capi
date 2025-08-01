@@ -1,9 +1,6 @@
 // src/auth/auth.controller.ts
 import { Controller, Post, Body, Get } from "@nestjs/common";
-import { AuthService } from "../services/auth.service";
-import { BotsService } from "../services/bots.service";
-import { CreateBotsDto, StartBotInteractionsDto } from "../dto/bots.dto";
-import { CreateNewsDto, GetNewsDto, NewsDto, SimilarContentDto } from "src/dto/news.dto";
+import { CreateNewsDto, GetNewsContentDto, NewsDto, SimilarContentDto } from "src/dto/news.dto";
 import { NewsService } from "src/services/news.service";
 import { AIService } from "src/services/ai.service";
 
@@ -14,76 +11,64 @@ export class NewsController {
     private newsService: NewsService
   ) {}
 
-  @Get("get-news")
-  async getNews() {
+
+
+  @Get("get-news-content")
+  async getNewsContent() {
     console.log("Fetching news...");
-    return await this.newsService.getNews();
-  }
-
-  @Post("update-graphs")
-  async updateGraphs(@Body() body: any) {
-    try{
-      const findSimilarExistingContent : SimilarContentDto = await this.newsService.findSimilarExistingContent(similarContentDto);
-          if (findSimilarExistingContent.success) {
-            console.log("Similar content found:", findSimilarExistingContent);
-            similarContentDto = findSimilarExistingContent;
-          } else { 
-            console.log("No similar content found for:", newsDto.title);
-          }
-          await this.newsService.updateGraphs(newsDto);
-
-    } catch (error) {
-      console.error("Error updating graphs:", error);
-      throw new Error("Error updating graphs");
-    }
+    let getNewsContentDto : GetNewsContentDto = {
+      success: false,
+    };
+    await this.newsService.getNewsContent(getNewsContentDto);
   }
 
 
-  @Post("generate-news-content")
-  async createNewsContent(@Body() body: any) {
-    console.log("Creating news content...");
-    try {
-      //could sort based on body, defaulting to news connections
-      const newsDtos: GetNewsDto = await this.newsService.getNews();
-      if (!newsDtos || !newsDtos.NewsDto || newsDtos.NewsDto.length === 0) {
-        throw new Error("No news available to generate content.");
-      } else {
-        console.log("News available for content generation.");
-        for (const newsDto of newsDtos.NewsDto) {
-          console.log(`Generating content for news: ${newsDto.title}`);
-          // Here you would call an AI service to generate content based on the news
-          //gather and connect information
-          //create a linear matrix, so that all stories
-          // are compared and compiled into scores, which
-          //will be used for further analysis because
-          //stored linear algebra data from news is extremely useful
-          // await this.newsService.deleteUnusableNewsData()
-          let similarContentDto : SimilarContentDto = {
-            title: newsDto.title,
-            content: newsDto.content,
-            similarNewsContentIds: [],
-            success: false
-          };
-          const findSimilarExistingContent : SimilarContentDto = await this.newsService.findSimilarExistingContent(similarContentDto);
-          if (findSimilarExistingContent.success) {
-            console.log("Similar content found:", findSimilarExistingContent);
-            similarContentDto = findSimilarExistingContent;
-          } else { 
-            console.log("No similar content found for:", newsDto.title);
-          }
-          await this.newsService.updateGraphs(newsDto);
-          // aiStoryComparisonNews();
-        }
-      }
-    } catch (error) {
-      console.error("Error creating news content:", error);
-      throw new Error("Error creating news content");
-    }
+  // @Post("generate-news-content")
+  // async createNewsContent(@Body() body: any) {
+  //   console.log("Creating news content...");
+  //   try {
+  //     //could sort based on body, defaulting to news connections
+  //     const newsDtos: GetNewsDto = await this.newsService.getNews();
+  //     if (!newsDtos || !newsDtos.NewsDto || newsDtos.NewsDto.length === 0) {
+  //       throw new Error("No news available to generate content.");
+  //     } else {
+  //       console.log("News available for content generation.");
+  //       for (const newsDto of newsDtos.NewsDto) {
+  //         console.log(`Generating content for news: ${newsDto.title}`);
+  //         // Here you would call an AI service to generate content based on the news
+  //         //gather and connect information
+  //         //create a linear matrix, so that all stories
+  //         // are compared and compiled into scores, which
+  //         //will be used for further analysis because
+  //         //stored linear algebra data from news is extremely useful
+  //         // await this.newsService.deleteUnusableNewsData()
+  //         let similarContentDto : SimilarContentDto = {
+  //           id: newsDto.id,
+  //           title: newsDto.title,
+  //           content: newsDto.content,
+  //           similarNewsContentIds: [],
+  //           success: false
+  //         };
+  //         const findSimilarExistingContent : SimilarContentDto = await this.newsService.findSimilarExistingContent(similarContentDto);
+  //         if (findSimilarExistingContent.success) {
+  //           console.log("Similar content found:", findSimilarExistingContent);
+  //           similarContentDto = findSimilarExistingContent;
+  //         } else { 
+  //           console.log("No similar content found for:", newsDto.title);
+  //         }
+  //         await this.newsService.updateGraphs(newsDto);
+  //         // aiStoryComparisonNews();
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error creating news content:", error);
+  //     throw new Error("Error creating news content");
+  //   }
 
-    // This method is not used in the controller, but can be used to generate content
-    // for news articles using AI or other methods.
-    return "This is a placeholder for news content generation.";
-  }
+  //   // This method is not used in the controller, but can be used to generate content
+  //   // for news articles using AI or other methods.
+  //   return "This is a placeholder for news content generation.";
+  // }
   
   /**
    * todo
