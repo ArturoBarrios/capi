@@ -31,13 +31,12 @@ model User {
 model NewsContent {
   id        String      @id @default(uuid())
   title     String
-  summary   String
-  content   String
+  summary   String  
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt
   news News[] @relation("NewsToNewsContent") //this acts as context
   subContent SubContent[] // This is the generated content that will be dynamic
-  sourcesCount Int @default(0) 
+  sourcesCount Int? @default(0) 
   updatePrompt String?
   pointsPrompt String?
   ignoreNews News[] @relation("CheckedNews") 

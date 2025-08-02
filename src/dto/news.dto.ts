@@ -35,7 +35,7 @@ export class NewsDto {
 export class SimilarContentDto {
     id: string;
     title: string;
-    content: string;
+    summary: string;
     similarNewsContentIds?: String[]; 
     success: boolean;
 }
