@@ -66,8 +66,7 @@ export class NewsService {
         success: false,
       };
       //similar stories
-      let similarContent = [];
-
+      console.log("Fetching similar news stories for analysis...");
       const news = await this.prisma.news.findMany({
         where: {
           id: {
@@ -89,38 +88,35 @@ export class NewsService {
         updatedAt: n.updatedAt === null ? undefined : n.updatedAt,
       }));
 
-      console.log("Similar content found:", similarContent);
 
       const storiesForComparison = mappedNews.map((article, index) => ({
         index: index,
         aiSummary: article.aiSummary,
       }));
+        console.log("Stories for comparison:", storiesForComparison);
 
-      const prompt = `You are analyzing news similarity. Compare the target story against the provided stories and return a JSON array of 1s and 0s.
-        TARGET STORY:
-        Title: "${newsDto.aiTitle}"
-        Summary: "${newsDto.aiSummary}"
-        Content: "${newsDto.content}"
+      const prompt = `Compare the target story to each comparison story. Return a JSON array where each number corresponds to one comparison story.
 
-        STORIES TO COMPARE:
-        ${JSON.stringify(storiesForComparison, null, 2)}
+TARGET STORY: "${newsDto.aiTitle}" - "${newsDto.aiSummary}"
 
-        INSTRUCTIONS:
-        - Return ONLY a JSON array of numbers
-        - Use 1 if the story at that index is similar to the target story
-        - Use 0 if the story at that index is NOT similar to the target story
-        - Consider stories similar if they cover the same event, topic, or subject matter
-        - The array length should match the number of stories provided (${mappedNews.length} items)
+COMPARISON STORIES:
+${storiesForComparison.map((story, idx) => 
+  `${idx}: "${story.aiSummary}"`
+).join('\n')}
 
-        EXAMPLE FORMAT: [0, 1, 0, 1, 0]
+Return exactly ${mappedNews.length} numbers (one for each comparison story):
+- 1 = similar to target story
+- 0 = not similar to target story
 
-        Response:`;
+Format: [${Array(mappedNews.length).fill('0').join(', ')}]
 
-      console.log("AI Prompt created for similarity analysis");
+Response:`; 
+
+      console.log("AI Prompt created for similarity analysis: ", prompt);
 
       const ollama_url = process.env.OLLAMA_URL;
-      const response = await axios.post(`${ollama_url}/run`, {
-        model: "llama2",
+      const response = await axios.post(`${ollama_url}/api/generate`, {
+        model: "llama3.2:3b",
         prompt: prompt,
         temperature: 0.5,
         max_tokens: 1000,
@@ -128,11 +124,19 @@ export class NewsService {
       });
       console.log("Ollama response:", response.data);
       if (response.status === 200 || response.statusText === "OK") {
-        const similarityScores = response.data.response;
-        console.log("Similarity scores:", similarityScores);
+         const similarityScores = response.data.response;
+  console.log("Similarity scores:", similarityScores);
+
+        // Extract JSON array from response that may contain additional text
+        const jsonMatch = similarityScores.match(/\[[^\]]*\]/);
+        if (!jsonMatch) {
+          throw new Error("Could not find valid JSON array in AI response");
+        }
+        const jsonString = jsonMatch[0];
+        console.log("Extracted JSON string:", jsonString);
 
         // Parse the similarity scores
-        const scoresArray = JSON.parse(similarityScores);
+        const scoresArray = JSON.parse(jsonString);
         similarContentDto.similarNewsContentIds = scoresArray
           .map((score, index) => (score === 1 ? mappedNews[index].id : null))
           .filter((id) => id !== null);
@@ -180,8 +184,8 @@ export class NewsService {
                 Response:`;
 
         console.log("AI Prompt created for news content analysis");
-        const newsContentResponse = await axios.post(`${ollama_url}/run`, {
-          model: "llama2",
+        const newsContentResponse = await axios.post(`${ollama_url}/api/generate`, {
+          model: "llama3.2:3b",
           prompt: newsContentPrompt,
           temperature: 0.5,
           max_tokens: 1000,

@@ -40,6 +40,7 @@ export class NewsController {
       success: false,
       id: singularNews.id,
     }
+    console.log("Generating news for analysis with ID:", generateNewsDto.id);
     this.newsService.generateContent(generateNewsDto);
   }
 
