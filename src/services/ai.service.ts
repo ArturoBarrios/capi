@@ -39,7 +39,7 @@ export class AIService {
  
 
   async createNews(dto: CreateNewsDto): Promise<CreateNewsDto> {
-    console.log("Creating AI news with:", dto);
+    console.log("Creating AI news for:", dto.title);
     const res : string = "";
     try {
       const response = await axios.post(`${this.ollamaUrl}/api/generate`, {
@@ -49,17 +49,39 @@ export class AIService {
       });
 
       // Parse the AI response (you'll need to handle the actual response format)
-      console.log("Ollama response:", response);
+      console.log("Ollama response:", response.status);
 
       if (response.status == 200 || response.statusText == "OK") {
-        dto.success = true;
-        // For now, return a basic response
+        // Parse the AI response to extract aiTitle and aiSummary
+        try {
+          const aiResponse = JSON.parse(response.data.response);
+          
+          // Populate the DTO with AI-generated content
+          dto.aiTitle = aiResponse.aiTitle || dto.title; // Fallback to original title
+          dto.aiSummary = aiResponse.aiSummary || dto.summary; // Fallback to original summary
+          dto.success = true;
+          
+          console.log("AI-generated title:", dto.aiTitle);
+          console.log("AI-generated summary:", dto.aiSummary);
+          
+        } catch (parseError) {
+          console.error("Error parsing AI response:", parseError);
+          console.log("Raw AI response:", response.data.response);
+          
+          // Keep original values if parsing fails
+          dto.aiTitle = dto.title;
+          dto.aiSummary = dto.summary;
+          dto.success = false;
+        }
+        
         return dto; 
       } else {
+        dto.success = false;
         return dto;
       }
     } catch (error) {
       console.error("Error creating news with AI:", error);
+      dto.success = false;
       return dto;
     }
   }

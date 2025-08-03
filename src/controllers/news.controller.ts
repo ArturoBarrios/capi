@@ -52,19 +52,12 @@ export class NewsController {
   @Post("create")
   async createNews(@Body() body: any) {
     console.log("Running createNews...");
-    //get the last news item to generate a prompt
-    const singularNews = await this.prisma.news.findFirst({
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-    if (!singularNews) {
-      throw new Error("No news found to generate analysis.");
-    }
+    
+    
     const aiNewsPrompt = `Based on this specific story, create an improved title and summary. 
-      Original Title: ${singularNews.title}
-      Original Summary: ${singularNews.summary || ""}
-      Original Content: ${singularNews.content}
+      Original Title: ${body.title}
+      Original Summary: ${body.summary || ""}
+      Original Content: ${body.content}
 
       Requirements:
       - Create a concise, engaging title (10 words or less)
@@ -78,9 +71,9 @@ export class NewsController {
       }`;
 
     const createAINewsDto: CreateNewsDto = {
-      title: singularNews.title,
-      summary: singularNews.summary,
-      content: singularNews.content,
+      title: body.title,
+      summary: body.summary,
+      content: body.content,
       aiTitle: "",
       aiSummary: "",
       prompt: aiNewsPrompt,
@@ -88,6 +81,9 @@ export class NewsController {
     };
     const createdResponse: CreateNewsDto =
       await this.aiService.createNews(createAINewsDto);
+      //populate aititle and aisummary
+    console.log("Created AI news response:", createdResponse.aiTitle, createdResponse.aiSummary);
+
     if (createdResponse.success) {
       console.log("AI news created successfully:", createdResponse);
       await this.newsService.createNews(createdResponse);
