@@ -51,7 +51,7 @@ export class NewsService {
    *    to create a list of x properties that will be output for new content
    *    you can also add a prompt for content to destroy, update, create, or other suggestions
    */
-  async analyzeNews(
+  async generateContent(
     getNewsForAnalysisDto: GetNewsForAnalysisDto
   ): Promise<GetNewsForAnalysisDto> {
     try {
@@ -143,7 +143,8 @@ export class NewsService {
         .filter(story => story !== null);
 
         const newsContentPrompt = `Analyze the target story and similar stories to create important context and identify controversies.
-
+                If Similar stories are provided, use them to enhance the analysis.
+                If no similar stories are found, focus on the target story alone.
                 TARGET STORY:
                 Title: "${newsDto.title}"
                 Summary: "${newsDto.summary}"
@@ -190,17 +191,42 @@ export class NewsService {
         if (newsContentResponse.status === 200 || newsContentResponse.statusText === "OK") {
           const newsContentData = newsContentResponse.data.response;
           const newsContentJson = JSON.parse(newsContentData);
-          console.log("News content analysis result:", newsContentJson);
-          
+          console.log("News content analysis result:", newsContentJson);   
 
-          
-       
+          // Create NewsContent object
+          const newsContent = await this.prisma.newsContent.create({
+            data: {
+              title: newsDto.aiTitle,
+              summary: newsDto.aiSummary,
+              news: {
+                connect: { id: newsDto.id } // Connect to the original News article
+              }
+            }
+          });
 
+          console.log("NewsContent created:", newsContent.id);
 
-        similarContentDto.success = true;
-      } else {
-        console.error("Failed to get similarity scores from AI");
-      }
+                    // Create SubContent for each property in the JSON response
+          for (const [key, value] of Object.entries(newsContentJson)) {
+            if (Array.isArray(value)) {
+              // Iterate through each item in the array
+              for (const item of value) {
+                await this.prisma.subContent.create({
+                  data: {
+                    content: item,
+                    type: key, // Use the actual property name (contextPoints, controversyPoints, etc.)
+                    newsContentId: newsContent.id
+                  }
+                });
+              }
+            }
+          }
+
+          console.log("All SubContent records created successfully");
+          similarContentDto.success = true;
+        } else {
+          console.error("Failed to get news content analysis from AI");
+        }
       
 
     }

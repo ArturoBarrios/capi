@@ -44,8 +44,6 @@ model NewsContent {
 
 model SubContent {
   id        String      @id @default(uuid())
-  title     String
-  summary   String
   content   String
   type      String // e.g., "article", "video", "podcast"
   newsContentId String?

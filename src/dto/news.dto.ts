@@ -10,8 +10,7 @@ export class CreateNewsDto {
 
 export class GetNewsForAnalysisDto {
     success: boolean;
-    message?: string; 
-    forAnalysis? : boolean;
+    message?: string;     
     id: string;
     newsDto?: NewsDto[];
 }
