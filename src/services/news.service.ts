@@ -245,8 +245,8 @@ Response:`;
   ): Promise<GetNewsContentDto> {
     try {
       const newsContent = await this.prisma.newsContent.findMany({
-        include: {
-          news: true,
+        include: {          
+          subContent: true, 
         },
         orderBy: {
           createdAt: "desc",
@@ -265,6 +265,28 @@ Response:`;
         message: "Error fetching news content",
         newsContents: [],
       };
+    }
+  }
+
+  async scrapeNYTimes(): Promise<string> {
+    console.log("Scraping NYTimes articles...");
+    try {
+      const scrapeUrl = process.env.SCRAPE_SITE_URL;
+      if (!scrapeUrl) {
+        throw new Error("SCRAPE_SITE_URL environment variable not set");
+      }
+
+      const response = await axios.post(`${scrapeUrl}/scrape-nytimes`);
+      
+      if (response.status === 200) {
+        console.log("NYTimes scraping completed successfully");
+        return "NYTimes articles scraped successfully";
+      } else {
+        throw new Error(`Scraping failed with status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error scraping NYTimes:", error);
+      return "Error scraping NYTimes articles";
     }
   }
 

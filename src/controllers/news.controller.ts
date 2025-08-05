@@ -15,13 +15,31 @@ export class NewsController {
 
 
 
+  
+
   @Get("get-news-content")
   async getNewsContent() {
     console.log("Fetching news...");
-    let getNewsContentDto : GetNewsContentDto = {
-      success: false,
-    };
-    await this.newsService.getNewsContent(getNewsContentDto);
+    try {
+      let getNewsContentDto : GetNewsContentDto = {
+        success: false,
+      };
+      const result = await this.newsService.getNewsContent(getNewsContentDto);
+      let res = {
+        success: true,
+        message: "News content fetched successfully",
+        newsContents: result,
+
+      }
+      return res;
+    } catch (error) {
+      console.error("Error in getNewsContent controller:", error);
+      return {
+        success: false,
+        message: "Error fetching news content",
+        newsContents: [],
+      };
+    }
   }
 
 
@@ -49,6 +67,24 @@ export class NewsController {
    * todo
    * 
    */
+
+  @Post("scrape-nytimes")
+  async scrapeNYTimes() {
+    console.log("Triggering NYTimes scraping...");
+    try {
+      const result = await this.newsService.scrapeNYTimes();
+      return {
+        success: true,
+        message: result,
+      };
+    } catch (error) {
+      console.error("Error in scrapeNYTimes controller:", error);
+      return {
+        success: false,
+        message: "Error scraping NYTimes articles",
+      };
+    }
+  }
 
   @Post("create")
   async createNews(@Body() body: any) {
