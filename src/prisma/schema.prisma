@@ -48,8 +48,6 @@ model SubContent {
   type      String // e.g., "article", "video", "podcast"
   newsContentId String?
   newsContent   NewsContent? @relation(fields: [newsContentId], references: [id])
-  
-  
 }
 
 model News {

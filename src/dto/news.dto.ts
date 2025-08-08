@@ -17,6 +17,7 @@ export class GetNewsForAnalysisDto {
 export class GetNewsContentDto {
     success: boolean;
     message?: string; 
+    startDate: Date;
     newsContents?: any[];
 }
 

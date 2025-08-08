@@ -13,16 +13,51 @@ export class NewsController {
     private prisma: PrismaService
   ) {}
 
+  @Get("without-content")
+  async getNewsWithoutContent() {
+    console.log("Fetching news without content...");
+    try {
+      const newsWithoutContent = await this.prisma.news.findMany({
+        where: {
+          newsContent: {
+            none: {}
+          }
+        },
+        orderBy: {
+          createdAt: "desc"
+        }
+      });
 
+      return {
+        success: true,
+        message: "News without content fetched successfully",
+        count: newsWithoutContent.length,
+        news: newsWithoutContent,
+      };
+    } catch (error) {
+      console.error("Error fetching news without content:", error);
+      return {
+        success: false,
+        message: "Error fetching news without content",
+        news: [],
+      };
+    }
+  }
 
-  
+  @Post("get-news")
+  async getNews(@Body() body: any) {
+    console.log("Fetching news...");
+    
+   
+  }
 
-  @Get("get-news-content")
-  async getNewsContent() {
+  @Post("get-news-content")
+  async getNewsContent(@Body() body: any) {
     console.log("Fetching news...");
     try {
       let getNewsContentDto : GetNewsContentDto = {
         success: false,
+        startDate: body.startDate,
       };
       const result = await this.newsService.getNewsContent(getNewsContentDto);
       let res = {
@@ -45,12 +80,24 @@ export class NewsController {
 
   @Post("generate-news")
   async generateNews(@Body() body: any) {
+    
     console.log("Running generateNews...");
-    const singularNews = await this.prisma.news.findFirst({
-                orderBy: {
-                    createdAt: "desc",
-                },
-                });
+    let singularNews;
+    
+    if (body.newsId) {
+      singularNews = await this.prisma.news.findFirst({
+        where: {
+          id: body.newsId,
+        },
+      });
+    } else {
+      singularNews = await this.prisma.news.findFirst({
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+    }
+    
     if (!singularNews) {
       throw new Error("No news found to generate analysis.");
     }

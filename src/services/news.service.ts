@@ -194,40 +194,163 @@ Response:`;
         console.log("Ollama response for news content:", newsContentResponse.data);
         if (newsContentResponse.status === 200 || newsContentResponse.statusText === "OK") {
           const newsContentData = newsContentResponse.data.response;
-          const newsContentJson = JSON.parse(newsContentData);
-          console.log("News content analysis result:", newsContentJson);   
-
-          // Create NewsContent object
-          const newsContent = await this.prisma.newsContent.create({
-            data: {
-              title: newsDto.aiTitle,
-              summary: newsDto.aiSummary,
-              news: {
-                connect: { id: newsDto.id } // Connect to the original News article
+          console.log("Raw news content data:", newsContentData);
+          
+          let newsContentJson;
+          let shouldCreateContent = false;
+          
+          try {
+            // Find the start of the JSON object
+            const startIndex = newsContentData.indexOf('{');
+            if (startIndex === -1) {
+              console.log("Could not find opening brace in AI response, skipping content creation");
+              throw new Error("Could not find valid JSON object in AI response");
+            }
+            
+            // Extract everything from the opening brace to the end
+            let jsonString = newsContentData.substring(startIndex);
+            console.log("Extracted JSON string (raw):", jsonString);
+            
+            // Try to find a natural ending point or complete the JSON
+            let braceCount = 0;
+            let endIndex = -1;
+            
+            for (let i = 0; i < jsonString.length; i++) {
+              if (jsonString[i] === '{') {
+                braceCount++;
+              } else if (jsonString[i] === '}') {
+                braceCount--;
+                if (braceCount === 0) {
+                  endIndex = i + 1;
+                  break;
+                }
               }
             }
-          });
-
-          console.log("NewsContent created:", newsContent.id);
-
-                    // Create SubContent for each property in the JSON response
-          for (const [key, value] of Object.entries(newsContentJson)) {
-            if (Array.isArray(value)) {
-              // Iterate through each item in the array
-              for (const item of value) {
-                await this.prisma.subContent.create({
-                  data: {
-                    content: item,
-                    type: key, // Use the actual property name (contextPoints, controversyPoints, etc.)
-                    newsContentId: newsContent.id
-                  }
-                });
+            
+            if (endIndex > 0) {
+              // We found a complete JSON object
+              jsonString = jsonString.substring(0, endIndex);
+            } else {
+              // JSON is incomplete, try to complete it
+              console.log("JSON appears incomplete, attempting to complete it");
+              
+              // Remove any trailing non-JSON content (like newlines, extra text)
+              jsonString = jsonString.replace(/[^}\]"]*$/, '');
+              
+              // If we have unclosed arrays, close them
+              const openSquareBrackets = (jsonString.match(/\[/g) || []).length;
+              const closeSquareBrackets = (jsonString.match(/\]/g) || []).length;
+              
+              for (let i = 0; i < (openSquareBrackets - closeSquareBrackets); i++) {
+                jsonString += ']';
+              }
+              
+              // If we have unclosed quotes, close them
+              const quotes = (jsonString.match(/"/g) || []).length;
+              if (quotes % 2 !== 0) {
+                jsonString += '"';
+              }
+              
+              // Ensure we have a closing brace
+              if (!jsonString.endsWith('}')) {
+                jsonString += '}';
               }
             }
+            
+            console.log("Final JSON string:", jsonString);
+            
+            // Parse directly without modification first
+            try {
+              newsContentJson = JSON.parse(jsonString);
+              shouldCreateContent = true;
+            } catch (directParseError) {
+              console.log("Direct parse failed, attempting additional fixes");
+              console.log("Parse error:", directParseError.message);
+              
+              // Additional cleanup attempts
+              let fixedJson = jsonString;
+              
+              // Remove trailing commas before closing brackets/braces
+              fixedJson = fixedJson.replace(/,(\s*[\]}])/g, '$1');
+              
+              // Try again
+              try {
+                newsContentJson = JSON.parse(fixedJson);
+                shouldCreateContent = true;
+              } catch (secondParseError) {
+                console.log("Second parse attempt failed:", secondParseError.message);
+                throw secondParseError;
+              }
+            }
+            
+            // Validate the structure
+            if (!newsContentJson.contextPoints || !Array.isArray(newsContentJson.contextPoints)) {
+              console.log("Invalid contextPoints structure, skipping content creation");
+              shouldCreateContent = false;
+            }
+            if (!newsContentJson.controversyPoints || !Array.isArray(newsContentJson.controversyPoints)) {
+              console.log("Invalid controversyPoints structure, skipping content creation");
+              shouldCreateContent = false;
+            }
+            
+            // Check if arrays have meaningful content
+            const hasValidContext = newsContentJson.contextPoints?.some(point => 
+              typeof point === 'string' && point.trim().length > 0
+            );
+            const hasValidControversy = newsContentJson.controversyPoints?.some(point => 
+              typeof point === 'string' && point.trim().length > 0
+            );
+            
+            if (!hasValidContext || !hasValidControversy) {
+              console.log("No valid content points found, skipping content creation");
+              shouldCreateContent = false;
+            }
+            
+          } catch (parseError) {
+            console.error("Failed to parse AI response as JSON:", parseError);
+            console.log("Skipping content creation due to parse failure");
+            shouldCreateContent = false;
           }
+          
+          if (shouldCreateContent) {
+            console.log("News content analysis result:", newsContentJson);   
 
-          console.log("All SubContent records created successfully");
-          similarContentDto.success = true;
+            // Create NewsContent object
+            const newsContent = await this.prisma.newsContent.create({
+              data: {
+                title: newsDto.aiTitle,
+                summary: newsDto.aiSummary,
+                news: {
+                  connect: { id: newsDto.id } // Connect to the original News article
+                }
+              }
+            });
+
+            console.log("NewsContent created:", newsContent.id);
+
+            // Create SubContent for each property in the JSON response
+            for (const [key, value] of Object.entries(newsContentJson)) {
+              if (Array.isArray(value)) {
+                // Iterate through each item in the array
+                for (const item of value) {
+                  if (typeof item === 'string' && item.trim().length > 0) {
+                    await this.prisma.subContent.create({
+                      data: {
+                        content: item,
+                        type: key, // Use the actual property name (contextPoints, controversyPoints, etc.)
+                        newsContentId: newsContent.id
+                      }
+                    });
+                  }
+                }
+              }
+            }
+
+            console.log("All SubContent records created successfully");
+            similarContentDto.success = true;
+          } else {
+            console.log("Content creation skipped due to invalid or missing AI analysis");
+          }
         } else {
           console.error("Failed to get news content analysis from AI");
         }
@@ -244,7 +367,12 @@ Response:`;
     getNewsContentDto: GetNewsContentDto
   ): Promise<GetNewsContentDto> {
     try {
+      const whereClause = getNewsContentDto.startDate 
+        ? { createdAt: { gte: new Date(getNewsContentDto.startDate) } }
+        : {};
+
       const newsContent = await this.prisma.newsContent.findMany({
+        where: whereClause,
         include: {          
           subContent: true, 
         },
@@ -256,11 +384,13 @@ Response:`;
         success: true,
         message: "News content fetched successfully",
         newsContents: newsContent,
+        startDate: getNewsContentDto.startDate,
       };
       return resultNewsContentDto;
     } catch (error) {
       console.error("Error fetching news content:", error);
       return {
+        startDate: getNewsContentDto.startDate,
         success: false,
         message: "Error fetching news content",
         newsContents: [],
