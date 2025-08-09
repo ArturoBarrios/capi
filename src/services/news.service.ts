@@ -17,6 +17,8 @@ dotenv.config();
 @Injectable()
 export class NewsService {
   newsService: NewsService;
+  private readonly aiModelName = process.env.AIMODELNAME || "llama3.2:3b"; // Fallback to default
+  
   constructor(private prisma: PrismaService) {}
 
   async getSingularNews(id: string): Promise<NewsDto> {
@@ -116,7 +118,7 @@ Response:`;
 
       const ollama_url = process.env.OLLAMA_URL;
       const response = await axios.post(`${ollama_url}/api/generate`, {
-        model: "llama3.2:3b",
+        model: this.aiModelName,
         prompt: prompt,
         temperature: 0.5,
         max_tokens: 1000,
@@ -185,7 +187,7 @@ Response:`;
 
         console.log("AI Prompt created for news content analysis");
         const newsContentResponse = await axios.post(`${ollama_url}/api/generate`, {
-          model: "llama3.2:3b",
+          model: this.aiModelName,
           prompt: newsContentPrompt,
           temperature: 0.5,
           max_tokens: 1000,

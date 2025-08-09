@@ -10,13 +10,14 @@ export class AIService {
   constructor(private prisma: PrismaService) {}
 
   private readonly ollamaUrl = "http://localhost:11434"; // Ollama's default port
+  private readonly aiModelName = process.env.AIMODELNAME || "llama3.2:3b"; // Fallback to default
 
   async createAIJoke(prompt: string): Promise<string> {
     console.log("Creating AI joke with prompt:", prompt);
     const res : string = "";
     try {
       const response = await axios.post(`${this.ollamaUrl}/api/generate`, {
-        model: "llama3.2:3b",
+        model: this.aiModelName,
         prompt: prompt,
         stream: false,
       });
@@ -43,7 +44,7 @@ export class AIService {
     const res : string = "";
     try {
       const response = await axios.post(`${this.ollamaUrl}/api/generate`, {
-        model: "llama3.2:3b",
+        model: this.aiModelName,
         prompt: dto.prompt,
         stream: false,
       });
@@ -93,7 +94,7 @@ export class AIService {
 
     try {
       const response = await axios.post(`${this.ollamaUrl}/api/generate`, {
-        model: "llama3.2:3b",
+        model: this.aiModelName,
         prompt: dto.aiMessage,
         stream: false,
       });
