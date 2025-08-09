@@ -49,13 +49,34 @@ export class AIService {
         stream: false,
       });
 
-      // Parse the AI response (you'll need to handle the actual response format)
-      console.log("Ollama response:", response.data.response);
+      console.log("Ollama response status:", response.status);
 
       if (response.status == 200 || response.statusText == "OK") {
         // Parse the AI response to extract aiTitle and aiSummary
         try {
-          const aiResponse = JSON.parse(response.data.response);
+          // Clean the response - remove any potential leading/trailing whitespace and non-printable characters
+          let cleanResponse = response.data.response.trim();
+          
+          // Remove any non-printable characters
+          cleanResponse = cleanResponse.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+          
+          // Log the exact response for debugging
+          console.log("Raw AI response length:", cleanResponse.length);
+          console.log("Raw AI response:", cleanResponse);
+          
+          // Try to find and extract just the JSON part if there's extra text
+          const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            cleanResponse = jsonMatch[0];
+            console.log("Extracted JSON:", cleanResponse);
+          }
+          
+          // Additional cleanup: ensure the JSON is properly closed
+          if (cleanResponse.startsWith('{') && !cleanResponse.endsWith('}')) {
+            cleanResponse += '}';
+          }
+          
+          const aiResponse = JSON.parse(cleanResponse);
           
           // Populate the DTO with AI-generated content
           dto.aiTitle = aiResponse.aiTitle || dto.title; // Fallback to original title
@@ -68,11 +89,25 @@ export class AIService {
         } catch (parseError) {
           console.error("Error parsing AI response:", parseError);
           console.log("Raw AI response:", response.data.response);
+          console.log("Response length:", response.data.response.length);
           
-          // Keep original values if parsing fails
-          dto.aiTitle = dto.title;
-          dto.aiSummary = dto.summary;
-          dto.success = false;
+          // Try alternative parsing - extract values manually if JSON parsing fails
+          const rawResponse = response.data.response;
+          const titleMatch = rawResponse.match(/"aiTitle":\s*"([^"]+)"/);
+          const summaryMatch = rawResponse.match(/"aiSummary":\s*"([^"]+)"/);
+          
+          if (titleMatch && summaryMatch) {
+            dto.aiTitle = titleMatch[1];
+            dto.aiSummary = summaryMatch[1];
+            dto.success = true;
+            console.log("Extracted via regex - Title:", dto.aiTitle);
+            console.log("Extracted via regex - Summary:", dto.aiSummary);
+          } else {
+            // Keep original values if parsing fails completely
+            dto.aiTitle = dto.title;
+            dto.aiSummary = dto.summary;
+            dto.success = false;
+          }
         }
         
         return dto; 
