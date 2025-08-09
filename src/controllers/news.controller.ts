@@ -147,7 +147,7 @@ export class NewsController {
     const aiNewsPrompt = `Based on this specific story, create an improved title and summary. 
       Original Title: ${body.title}
       Original Summary: ${body.summary || ""}
-      Original Content: ${body.choppedContent}
+      Original Content: ${choppedContent}
 
       Requirements:
       - Create a concise, engaging title (10 words or less)
