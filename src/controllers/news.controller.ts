@@ -137,11 +137,17 @@ export class NewsController {
   async createNews(@Body() body: any) {
     console.log("Running createNews...");
     
-    
+    // Create chopped content (every third sentence)
+    const sentences = body.content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const choppedContent = sentences
+      .filter((_, index) => index % 3 === 0)
+      .join('. ') + '.';
+
+
     const aiNewsPrompt = `Based on this specific story, create an improved title and summary. 
       Original Title: ${body.title}
       Original Summary: ${body.summary || ""}
-      Original Content: ${body.content}
+      Original Content: ${body.choppedContent}
 
       Requirements:
       - Create a concise, engaging title (10 words or less)
