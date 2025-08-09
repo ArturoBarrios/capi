@@ -115,6 +115,81 @@ export class NewsController {
    * 
    */
 
+  @Post("delete-news")
+  async deleteNews(@Body() body: any) {
+    console.log("Deleting news with ID:", body.newsId);
+    try {
+      if (!body.newsId) {
+        return {
+          success: false,
+          message: "News ID is required",
+        };
+      }
+
+      const result = await this.newsService.deleteNews(body.newsId);
+      return {
+        success: true,
+        message: result,
+      };
+    } catch (error) {
+      console.error("Error in deleteNews controller:", error);
+      return {
+        success: false,
+        message: "Error deleting news",
+      };
+    }
+  }
+
+  @Post("delete-newscontent")
+  async deleteNewsContent(@Body() body: any) {
+    console.log("Deleting news content with ID:", body.newsContentId);
+    try {
+      if (!body.newsContentId) {
+        return {
+          success: false,
+          message: "News content ID is required",
+        };
+      }
+
+      const result = await this.newsService.deleteNewsContent(body.newsContentId);
+      return {
+        success: true,
+        message: result,
+      };
+    } catch (error) {
+      console.error("Error in deleteNewsContent controller:", error);
+      return {
+        success: false,
+        message: "Error deleting news content",
+      };
+    }
+  }
+
+  @Post("delete-subcontent")
+  async deleteSubContent(@Body() body: any) {
+    console.log("Deleting subcontent with ID:", body.subContentId);
+    try {
+      if (!body.subContentId) {
+        return {
+          success: false,
+          message: "Subcontent ID is required",
+        };
+      }
+
+      const result = await this.newsService.deleteSubContent(body.subContentId);
+      return {
+        success: true,
+        message: result,
+      };
+    } catch (error) {
+      console.error("Error in deleteSubContent controller:", error);
+      return {
+        success: false,
+        message: "Error deleting subcontent",
+      };
+    }
+  }
+
   @Post("scrape-nytimes")
   async scrapeNYTimes() {
     console.log("Triggering NYTimes scraping...");

@@ -465,6 +465,94 @@ Response:`;
     return "News grouped by similarity successfully";
   }
 
+  async deleteNews(newsId: string): Promise<string> {
+    console.log("Deleting news with ID:", newsId);
+    try {
+      // Check if news exists
+      const news = await this.prisma.news.findUnique({
+        where: { id: newsId },
+      });
+
+      if (!news) {
+        throw new Error("News not found");
+      }
+
+      // Delete the news
+      await this.prisma.news.delete({
+        where: { id: newsId },
+      });
+
+      console.log("News deleted successfully:", newsId);
+      return "News deleted successfully";
+    } catch (error) {
+      console.error("Error deleting news:", error);
+      throw new Error("Error deleting news");
+    }
+  }
+
+  async deleteNewsContent(newsContentId: string): Promise<string> {
+    console.log("Deleting news content with ID:", newsContentId);
+    try {
+      // Check if news content exists
+      const newsContent = await this.prisma.newsContent.findUnique({
+        where: { id: newsContentId },
+        include: {
+          subContent: true,
+        },
+      });
+
+      if (!newsContent) {
+        throw new Error("News content not found");
+      }
+
+      // First delete all associated subcontent
+      if (newsContent.subContent.length > 0) {
+        await this.prisma.subContent.deleteMany({
+          where: {
+            newsContentId: newsContentId,
+          },
+        });
+        console.log(`Deleted ${newsContent.subContent.length} subcontent records`);
+      }
+
+      // Then delete the news content
+      await this.prisma.newsContent.delete({
+        where: { id: newsContentId },
+      });
+
+      console.log("News content deleted successfully:", newsContentId);
+      return "News content and associated subcontent deleted successfully";
+    } catch (error) {
+      console.error("Error deleting news content:", error);
+      throw new Error("Error deleting news content");
+    }
+  }
+
+  async deleteSubContent(subContentId: string): Promise<string> {
+    console.log("Deleting subcontent with ID:", subContentId);
+    try {
+      // Check if subcontent exists
+      const subContent = await this.prisma.subContent.findUnique({
+        where: { id: subContentId },
+      });
+
+      if (!subContent) {
+        throw new Error("Subcontent not found");
+      }
+
+      // Delete the subcontent
+      await this.prisma.subContent.delete({
+        where: { id: subContentId },
+      });
+
+      console.log("Subcontent deleted successfully:", subContentId);
+      return "Subcontent deleted successfully";
+    } catch (error) {
+      console.error("Error deleting subcontent:", error);
+      throw new Error("Error deleting subcontent");
+    }
+  }
+
   async aiNewsCheck(dto: AiCheckDto): Promise<String> {
     // Query jokes within the given date range
     //make call to AI service to check if joke is valid
