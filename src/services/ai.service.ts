@@ -50,6 +50,7 @@ export class AIService {
       });
 
       console.log("Ollama response status:", response.status);
+      console.log("Ollama response statusText:", response.statusText);
 
       if (response.status == 200 || response.statusText == "OK") {
         // Parse the AI response to extract aiTitle and aiSummary
