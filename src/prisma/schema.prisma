@@ -48,6 +48,8 @@ model SubContent {
   type      String // e.g., "article", "video", "podcast"
   newsContentId String?
   newsContent   NewsContent? @relation(fields: [newsContentId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
 model News {
@@ -81,6 +83,7 @@ model NewsConnection {
   @@unique([fromNewsId, toNewsId]) // Prevent duplicate connections
 }
 
+// Charlie Kirk on all platforms should be the same????
 model SocialMedia {
   id        String      @id @default(uuid())
   platform  String      // e.g., "Twitter", "Facebook", "Instagram"
@@ -95,6 +98,11 @@ model SocialMediaConnections {
   id            String   @id @default(uuid())
   socialMediaId String
   newsId        String
+  sentiment String? // "positive", "negative", "neutral"
+  opinionType String? // "expert", "general_public", "influencer"
+  truthScore Int? @default(0) 
+  ragebaitScore Int? @default(0)
+  clickbaitScore Int? @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime? @updatedAt
   socialMedia   SocialMedia @relation("SocialMediaConnections", fields: [socialMediaId], references: [id])

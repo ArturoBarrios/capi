@@ -115,7 +115,7 @@ export class NewsController {
    * 
    */
 
-  @Post("delete-news")
+  @Post("delete-newswithoutcontent")
   async deleteNews(@Body() body: any) {
     console.log("Deleting news with ID:", body.newsId);
     try {
