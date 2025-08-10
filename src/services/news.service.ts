@@ -98,7 +98,7 @@ export class NewsService {
       console.log("Stories for comparison:", storiesForComparison);
       const ollama_url = process.env.OLLAMA_URL;
       let similarStories: any[] = [];
-      if (storiesForComparison.length == 0) {
+      if (storiesForComparison.length > 0) {
         const prompt = `Compare the target story to each comparison story. Return a JSON array where each number corresponds to one comparison story.
     
             TARGET STORY: "${newsDto.aiTitle}" - "${newsDto.aiSummary}"
