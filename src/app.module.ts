@@ -14,6 +14,8 @@ import { AIService } from './services/ai.service';
 import { BotsService } from './services/bots.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NewsService } from './services/news.service';
+import { SocialMediaProfileController } from './controllers/social-media-profile.controller';
+import { SocialMediaProfileService } from './services/social-media-profile.service';
 
 @Module({
   imports: [
@@ -30,7 +32,7 @@ import { NewsService } from './services/news.service';
       inject: [ConfigService],
     }),
   ],
-  controllers: [PrimaryController, AuthController, AnalyzersController, BotsController, NewsController],
-  providers: [PrimaryService, AuthService, PrismaService, AnalyzersService, AIService, BotsService, NewsService],
+  controllers: [PrimaryController, AuthController, AnalyzersController, BotsController, NewsController, SocialMediaProfileController],
+  providers: [PrimaryService, AuthService, PrismaService, AnalyzersService, AIService, BotsService, NewsService, SocialMediaProfileService],
 })
 export class AppModule {}

@@ -43,15 +43,17 @@ export class AIService {
     console.log("Creating AI news for:", dto.title);
     const res : string = "";
     try {
+      let attempts = 3;
+      let succeded = false;
+    while (attempts > 0 && !succeded ) {
+      console.log("attempt number ", (4 - attempts));
       const response = await axios.post(`${this.ollamaUrl}/api/generate`, {
         model: this.aiModelName,
         prompt: dto.prompt,
         stream: false,
       });
-
       console.log("Ollama response status:", response.status);
       console.log("Ollama response statusText:", response.statusText);
-
       if (response.status == 200 || response.statusText == "OK") {
         // Parse the AI response to extract aiTitle and aiSummary
         try {
@@ -83,9 +85,12 @@ export class AIService {
           dto.aiTitle = aiResponse.aiTitle || dto.title; // Fallback to original title
           dto.aiSummary = aiResponse.aiSummary || dto.summary; // Fallback to original summary
           dto.success = true;
+          succeded = true; 
           
           console.log("AI-generated title:", dto.aiTitle);
           console.log("AI-generated summary:", dto.aiSummary);
+
+          return dto; 
           
         } catch (parseError) {
           console.error("Error parsing AI response:", parseError);
@@ -111,11 +116,19 @@ export class AIService {
           }
         }
         
-        return dto; 
+        
       } else {
         dto.success = false;
-        return dto;
+        
       }
+      attempts--;
+    }
+
+    console.error("Failed to create news with AI after multiple attempts");
+    dto.success = false;
+    return dto;
+
+
     } catch (error) {
       console.error("Error creating news with AI:", error);
       dto.success = false;

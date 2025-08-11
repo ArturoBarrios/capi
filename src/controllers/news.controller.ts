@@ -244,6 +244,7 @@ export class NewsController {
       prompt: aiNewsPrompt,
       success: false,
     };
+    
     const createdResponse: CreateNewsDto =
       await this.aiService.createNews(createAINewsDto);
       //populate aititle and aisummary
