@@ -419,6 +419,16 @@ export class NewsService {
         where: whereClause,
         include: {
           subContent: true,
+          posts: {
+            include: {
+              socialMediaAccount: {
+                select: {
+                  username: true,
+                  platform: true
+                }
+              }
+            }
+          }
         },
         orderBy: {
           createdAt: "desc",
