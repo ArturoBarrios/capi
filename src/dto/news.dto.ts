@@ -54,6 +54,7 @@ export class SimilarContentDto {
 export class GeneratedNewsStoryDto {
     title: string;
     summary: string;
+    content: string;
     publishedDate: string;
     source: string;
     location: string;

@@ -9,7 +9,7 @@ import OpenAI from 'openai';
 export class AIService {
   constructor(private prisma: PrismaService) {}
 
-  private readonly openai = new OpenAI({
+  public readonly openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
 

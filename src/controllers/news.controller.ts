@@ -78,37 +78,6 @@ export class NewsController {
   }
 
 
-  @Post("generate-news")
-  async generateNews(@Body() body: any) {
-    
-    console.log("Running generateNews...");
-    let singularNews;
-    
-    if (body.newsId) {
-      singularNews = await this.prisma.news.findFirst({
-        where: {
-          id: body.newsId,
-        },
-      });
-    } else {
-      singularNews = await this.prisma.news.findFirst({
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
-    }
-    
-    if (!singularNews) {
-      throw new Error("No news found to generate analysis.");
-    }
-    let generateNewsDto: GetNewsForAnalysisDto = {
-      success: false,
-      id: singularNews.id,
-    }
-    console.log("Generating news for analysis with ID:", generateNewsDto.id);
-    this.newsService.generateContent(generateNewsDto);
-  }
-
   @Post("generate-news-with-ai")
   async generateNewsWithAI(@Body() body: GenerateNewsWithAI) {
     console.log("Generating news with AI...");

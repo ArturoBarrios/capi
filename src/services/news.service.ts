@@ -59,7 +59,7 @@ export class NewsService {
    *    to create a list of x properties that will be output for new content
    *    you can also add a prompt for content to destroy, update, create, or other suggestions
    */
-  async generateContent(
+  async generateSubContent(
     getNewsForAnalysisDto: GetNewsForAnalysisDto
   ): Promise<GetNewsForAnalysisDto> {
     try {
@@ -67,98 +67,6 @@ export class NewsService {
       let newsDto: NewsDto = await this.getSingularNews(
         getNewsForAnalysisDto.id
       );
-      let similarContentDto: SimilarContentDto = {
-        id: getNewsForAnalysisDto.id,
-        title: newsDto.aiTitle,
-        summary: newsDto.aiSummary,
-        success: false,
-      };
-      //similar stories
-      console.log("Fetching similar news stories for analysis...");
-      const news = await this.prisma.news.findMany({
-        where: {
-          id: {
-            not: getNewsForAnalysisDto.id, // Exclude the current article being analyzed
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
-      const mappedNews: NewsDto[] = news.map((n) => ({
-        id: n.id,
-        title: n.title,
-        summary: n.summary,
-        content: n.content,
-        aiTitle: n.aiTitle ?? "",
-        aiSummary: n.aiSummary ?? "",
-        createdAt: n.createdAt,
-        updatedAt: n.updatedAt === null ? undefined : n.updatedAt,
-      }));
-
-      let storiesForComparison = mappedNews.map((article, index) => ({
-        index: index,
-        aiSummary: article.aiSummary,
-      }));
-      storiesForComparison = [];
-      console.log("Stories for comparison:", storiesForComparison);
-      const ollama_url = process.env.OLLAMA_URL;
-      let similarStories: any[] = [];
-      if (storiesForComparison.length > 0) {
-        const prompt = `Compare the target story to each comparison story. Return a JSON array where each number corresponds to one comparison story.
-    
-            TARGET STORY: "${newsDto.aiTitle}" - "${newsDto.aiSummary}"
-            
-            COMPARISON STORIES:
-            ${storiesForComparison
-              .map((story, idx) => `${idx}: "${story.aiSummary}"`)
-              .join("\n")}
-            
-            Return exactly ${mappedNews.length} numbers (one for each comparison story):
-            - 1 = similar to target story
-            - 0 = not similar to target story
-            
-            Format: [${Array(mappedNews.length).fill("0").join(", ")}]
-            
-            Response:`;
-
-        console.log("AI Prompt created for similarity analysis: ", prompt);
-
-        
-        const response = await axios.post(`${ollama_url}/api/generate`, {
-          model: this.aiModelName,
-          prompt: prompt,
-          temperature: 0.5,
-          max_tokens: 1000,
-          stream: false,
-        });
-        
-        console.log("Ollama response:", response.data);
-        if (response.status === 200 || response.statusText === "OK") {
-          const similarityScores = response.data.response;
-          console.log("Similarity scores:", similarityScores);
-
-          // Extract JSON array from response that may contain additional text
-          const jsonMatch = similarityScores.match(/\[[^\]]*\]/);
-          if (!jsonMatch) {
-            throw new Error("Could not find valid JSON array in AI response");
-          }
-          const jsonString = jsonMatch[0];
-          console.log("Extracted JSON string:", jsonString);
-
-          // Parse the similarity scores
-          const scoresArray = JSON.parse(jsonString);
-          similarContentDto.similarNewsContentIds = scoresArray
-            .map((score, index) => (score === 1 ? mappedNews[index].id : null))
-            .filter((id) => id !== null);
-          //create news content......
-          // Get the similar stories based on the similarity scores
-          similarStories = scoresArray
-            .map((score, index) => (score === 1 ? mappedNews[index] : null))
-            .filter((story) => story !== null);
-        }
-      }
-      //aaa
       
       //try 3 times to get valid json
       let failedAttempts = 3;
@@ -171,10 +79,9 @@ export class NewsService {
                   TARGET STORY:
                   Title: "${newsDto.title}"
                   Summary: "${newsDto.summary}"
+  
                   Content: "${newsDto.content}"
   
-                  SIMILAR STORIES:
-                   No Similar Stories Found
   
                   TASK:
                   Create 2 key points that provide important context about this story, and 2 key points about controversies or disagreements people are having related to this topic.
@@ -200,31 +107,30 @@ export class NewsService {
                   Response:`;
   
         console.log("AI Prompt created for news content analysis");
-        const newsContentResponse = await axios.post(
-          `${ollama_url}/api/generate`,
-          {
-            model: this.aiModelName,
-            prompt: newsContentPrompt,
-            temperature: 0.5,
+        
+        try {
+          const response = await this.aiService.openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [
+              {
+                role: "user",
+                content: newsContentPrompt
+              }
+            ],
             max_tokens: 1000,
-            stream: false,
-          }
-        );
-        console.log(
-          "Ollama response for news content:",
-          newsContentResponse.data
-        );
-        if (
-          newsContentResponse.status === 200 ||
-          newsContentResponse.statusText === "OK"
-        ) {
-          const newsContentData = newsContentResponse.data.response;
-          console.log("Raw news content data:", newsContentData);
-  
-          let newsContentJson;
-          let shouldCreateContent = false;
-  
-          try {
+            temperature: 0.5,
+          });
+
+          console.log("OpenAI response for news content:", response);
+          
+          if (response.choices && response.choices[0]?.message?.content) {
+            const newsContentData = response.choices[0].message.content.trim();
+            console.log("Raw news content data:", newsContentData);
+
+            let newsContentJson;
+            let shouldCreateContent = false;
+
+            try {
             
   
             // Find the start of the JSON object
@@ -357,7 +263,7 @@ export class NewsService {
   
           if (shouldCreateContent) {
             console.log("News content analysis result:", newsContentJson);
-  
+
             // Create NewsContent object
             const newsContent = await this.prisma.newsContent.create({
               data: {
@@ -368,9 +274,9 @@ export class NewsService {
                 },
               },
             });
-  
+
             console.log("NewsContent created:", newsContent.id);
-  
+
             // Create SubContent for each property in the JSON response
             for (const [key, value] of Object.entries(newsContentJson)) {
               if (Array.isArray(value)) {
@@ -388,9 +294,8 @@ export class NewsService {
                 }
               }
             }
-  
-            console.log("All SubContent records created successfully");
-            similarContentDto.success = true;
+
+            console.log("All SubContent records created successfully");            
             succeded = true;
           } else {
             console.log(
@@ -400,9 +305,9 @@ export class NewsService {
         } else {
           console.error("Failed to get news content analysis from AI");
         }
-
-
-
+        } catch (apiError) {
+          console.error("Error calling OpenAI API:", apiError);
+        }
 
         failedAttempts--;
       }
@@ -428,7 +333,8 @@ export class NewsService {
           news: {
             select: {
               id: true,              
-              topic: true,              
+              topic: true,  
+              content: true            
             }
           },
           posts: {
@@ -659,18 +565,22 @@ Requirements:
 - Focus specifically on "${dto.topic}" in the context of "${dto.location}"
 - Create realistic, summary of articles with proper journalism structure
 - Each article should have a title, no more than 10 words, summary of no more than 75 words
+- Each article must include 3-6 well-written paragraphs that thoroughly describe the news story
 - Include diverse perspectives and sources
 - Make content engaging and informative
+- Write in professional journalism style
 
 For each article, provide:
 - Simulated publication date within this week
 - A realistic news source name
+- Detailed content with proper paragraph structure
 
 Return ONLY a valid JSON array with this exact structure:
 [
   {
     "title": "Compelling headline here",
     "summary": "Brief summary capturing the essence of the story",
+    "content": "First paragraph providing the lead and key details.\n\nSecond paragraph expanding on the story with more context and details.\n\nThird paragraph including quotes or expert opinions.\n\nFourth paragraph with additional background information.\n\nFifth paragraph discussing implications or future developments.\n\nSixth paragraph with concluding thoughts or call to action.",
     "publishedDate": "2025-08-12",
     "source": "Local News Source Name",
     "location": "${dto.location}",
@@ -678,7 +588,7 @@ Return ONLY a valid JSON array with this exact structure:
   }
 ]
 
-Ensure the JSON is valid and can be parsed directly.`;
+Ensure the JSON is valid and can be parsed directly. Each content field should contain 3-6 well-structured paragraphs separated by double newlines (\\n\\n).`;
 
       const generateRequest: GenerateNewsWithAI = {
         ...dto,
@@ -697,7 +607,7 @@ Ensure the JSON is valid and can be parsed directly.`;
           const newsDto: CreateNewsDto = {
             title: article.title,
             summary: article.summary,
-            content: "",
+            content: article.content,
             aiTitle: article.title,
             aiSummary: article.summary,
             prompt: prompt,
@@ -774,3 +684,4 @@ Ensure the JSON is valid and can be parsed directly.`;
     }
   }
 }
+
