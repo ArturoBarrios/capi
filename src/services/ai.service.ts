@@ -2,103 +2,80 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { MinimalJokeDto } from "../dto/create-joke.dto";
 import { AiCheckDto, AiCheckResponseDto } from "../dto/check-integrity.dto";
-import axios from "axios";
 import { CreateNewsDto, SimilarContentDto, GenerateNewsWithAI, GenerateNewsWithAIResponseDto } from "src/dto/news.dto";
+import OpenAI from 'openai';
 
 @Injectable()
 export class AIService {
   constructor(private prisma: PrismaService) {}
 
-  private readonly ollamaUrl = "http://localhost:11434"; // Ollama's default port
-  private readonly aiModelName = process.env.AIMODELNAME || "llama3.2:3b"; // Fallback to default
+  private readonly openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
 
   async createAIJoke(prompt: string): Promise<string> {
     console.log("Creating AI joke with prompt:", prompt);
-    const res : string = "";
     try {
-      const response = await axios.post(`${this.ollamaUrl}/api/generate`, {
-        model: this.aiModelName,
-        prompt: prompt,
-        stream: false,
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: 150,
+        temperature: 0.8,
       });
 
-      // Parse the AI response (you'll need to handle the actual response format)
-      console.log("Ollama response:", response);
+      console.log("OpenAI response:", response);
 
-      if (response.status == 200 || response.statusText == "OK") {
-        // For now, return a basic response
-        return response.data.response; 
+      if (response.choices && response.choices[0]?.message?.content) {
+        return response.choices[0].message.content.trim();
       } else {
         return "Failed to create joke with AI";
       }
     } catch (error) {
       console.error("Error creating joke with AI:", error);
-      return "Error creating  with AI";
+      return "Error creating joke with AI";
     }
   }
-  
- 
 
   async createNews(dto: CreateNewsDto): Promise<CreateNewsDto> {
     console.log("Creating AI news for:", dto.title);
-    const res : string = "";
     try {
-      let attempts = 3;
-      let succeded = false;
-    while (attempts > 0 && !succeded ) {
-      console.log("attempt number ", (4 - attempts));
-      const response = await axios.post(`${this.ollamaUrl}/api/generate`, {
-        model: this.aiModelName,
-        prompt: dto.prompt,
-        stream: false,
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "user",
+            content: dto.prompt
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.7,
       });
-      console.log("Ollama response status:", response.status);
-      console.log("Ollama response statusText:", response.statusText);
-      if (response.status == 200 || response.statusText == "OK") {
-        // Parse the AI response to extract aiTitle and aiSummary
+
+      console.log("OpenAI response:", response);
+
+      if (response.choices && response.choices[0]?.message?.content) {
         try {
-          // Clean the response - remove any potential leading/trailing whitespace and non-printable characters
-          let cleanResponse = response.data.response.trim();
+          const aiResponse = JSON.parse(response.choices[0].message.content.trim());
           
-          // Remove any non-printable characters
-          cleanResponse = cleanResponse.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
-          
-          // Log the exact response for debugging
-          console.log("Raw AI response length:", cleanResponse.length);
-          console.log("Raw AI response:", cleanResponse);
-          
-          // Try to find and extract just the JSON part if there's extra text
-          const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            cleanResponse = jsonMatch[0];
-            console.log("Extracted JSON:", cleanResponse);
-          }
-          
-          // Additional cleanup: ensure the JSON is properly closed
-          if (cleanResponse.startsWith('{') && !cleanResponse.endsWith('}')) {
-            cleanResponse += '}';
-          }
-          
-          const aiResponse = JSON.parse(cleanResponse);
-          
-          // Populate the DTO with AI-generated content
-          dto.aiTitle = aiResponse.aiTitle || dto.title; // Fallback to original title
-          dto.aiSummary = aiResponse.aiSummary || dto.summary; // Fallback to original summary
+          dto.aiTitle = aiResponse.aiTitle || dto.title;
+          dto.aiSummary = aiResponse.aiSummary || dto.summary;
           dto.success = true;
-          succeded = true; 
           
           console.log("AI-generated title:", dto.aiTitle);
           console.log("AI-generated summary:", dto.aiSummary);
 
-          return dto; 
+          return dto;
           
         } catch (parseError) {
           console.error("Error parsing AI response:", parseError);
-          console.log("Raw AI response:", response.data.response);
-          console.log("Response length:", response.data.response.length);
           
           // Try alternative parsing - extract values manually if JSON parsing fails
-          const rawResponse = response.data.response;
+          const rawResponse = response.choices[0].message.content;
           const titleMatch = rawResponse.match(/"aiTitle":\s*"([^"]+)"/);
           const summaryMatch = rawResponse.match(/"aiSummary":\s*"([^"]+)"/);
           
@@ -109,25 +86,16 @@ export class AIService {
             console.log("Extracted via regex - Title:", dto.aiTitle);
             console.log("Extracted via regex - Summary:", dto.aiSummary);
           } else {
-            // Keep original values if parsing fails completely
             dto.aiTitle = dto.title;
             dto.aiSummary = dto.summary;
             dto.success = false;
           }
         }
-        
-        
       } else {
         dto.success = false;
-        
       }
-      attempts--;
-    }
 
-    console.error("Failed to create news with AI after multiple attempts");
-    dto.success = false;
-    return dto;
-
+      return dto;
 
     } catch (error) {
       console.error("Error creating news with AI:", error);
@@ -137,26 +105,32 @@ export class AIService {
   }
 
   async aiJokeCheck(dto: AiCheckDto): Promise<AiCheckResponseDto> {
-    // Query jokes within the given date range
-    //make call to AI service to check if joke is valid
-    //should you send one joke or many?
-
     try {
-      const response = await axios.post(`${this.ollamaUrl}/api/generate`, {
-        model: this.aiModelName,
-        prompt: dto.aiMessage,
-        stream: false,
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "user",
+            content: dto.aiMessage
+          }
+        ],
+        max_tokens: 100,
+        temperature: 0.3,
       });
 
-      // Parse the AI response (you'll need to handle the actual response format)
-      console.log("Ollama response:", response);
+      console.log("OpenAI response:", response);
 
-      if (response.status == 200 || response.statusText == "OK") {
-        // For now, return a basic response
+      if (response.choices && response.choices[0]?.message?.content) {
+        const aiResponseText = response.choices[0].message.content.trim();
+        
+        // Try to extract a numeric score from the response
+        const scoreMatch = aiResponseText.match(/(\d+(?:\.\d+)?)/);
+        const score = scoreMatch ? parseFloat(scoreMatch[1]) : 0;
+        
         return {
           success: true,
           message: "Joke checked successfully",
-          score: response.data.response,
+          score: score,
         };
       } else {
         return {
@@ -176,19 +150,25 @@ export class AIService {
   async generateNewsWithAI(dto: GenerateNewsWithAI): Promise<GenerateNewsWithAIResponseDto> {
     console.log("AI Service: Generating news with AI");
     try {
-      const ollama_url = process.env.OLLAMA_URL;
-      const aiModelName = process.env.AIMODELNAME || "llama3.2:3b";
+      // Ensure prompt is not undefined
+      if (!dto.prompt) {
+        throw new Error("Prompt is required");
+      }
 
-      const response = await axios.post(`${ollama_url}/api/generate`, {
-        model: aiModelName,
-        prompt: dto.prompt,
-        temperature: 0.7,
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "user",
+            content: dto.prompt
+          }
+        ],
         max_tokens: 2000,
-        stream: false,
+        temperature: 0.7,
       });
 
-      if (response.status === 200 || response.statusText === "OK") {
-        const aiResponse = response.data.response;
+      if (response.choices && response.choices[0]?.message?.content) {
+        const aiResponse = response.choices[0].message.content.trim();
         console.log("Raw AI response:", aiResponse);
 
         // Extract JSON array from response
@@ -232,7 +212,7 @@ export class AIService {
           };
         }
       } else {
-        throw new Error(`AI service returned status: ${response.status}`);
+        throw new Error("No response content from OpenAI");
       }
     } catch (error) {
       console.error("Error in AI service generateNewsWithAI:", error);

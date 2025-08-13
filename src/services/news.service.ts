@@ -519,6 +519,8 @@ export class NewsService {
     }
   }
 
+ 
+
   async updateGraphs(): Promise<string> {
     console.log("Grouping news by similarity...");
     try {
@@ -721,13 +723,9 @@ Ensure the JSON is valid and can be parsed directly.`;
             
             if (createdNews) {
               console.log(`Generating content for article: ${article.title} (ID: ${createdNews.id})`);
-              const getNewsForAnalysisDto: GetNewsForAnalysisDto = {
-                id: createdNews.id,
-                success: true
-              };
               
               try {
-                await this.generateContent(getNewsForAnalysisDto);
+                await this.createNewsContent(newsDto, createdNews.id);
                 console.log(`Content generation completed for article: ${article.title}`);
               } catch (contentError) {
                 console.error(`Failed to generate content for article "${article.title}":`, contentError);
@@ -752,6 +750,27 @@ Ensure the JSON is valid and can be parsed directly.`;
         message: "Error generating news with AI",
         stories: [],
       };
+    }
+  }
+
+  async createNewsContent(newsDto: CreateNewsDto, newsId: string): Promise<void> {
+    try {
+      console.log("Creating news content for:", newsDto.title);
+      
+      const newsContent = await this.prisma.newsContent.create({
+        data: {
+          title: newsDto.aiTitle || newsDto.title,
+          summary: newsDto.aiSummary || newsDto.summary,
+          news: {
+            connect: { id: newsId },
+          },
+        },
+      });
+
+      console.log("NewsContent created successfully:", newsContent.id);
+    } catch (error) {
+      console.error("Error creating news content:", error);
+      throw new Error("Failed to create news content");
     }
   }
 }
