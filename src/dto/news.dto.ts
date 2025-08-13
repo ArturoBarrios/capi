@@ -4,8 +4,19 @@ export class CreateNewsDto {
     content: string;  
     aiTitle: string; 
     aiSummary: string;
+    topic?: string; // Optional topic field for categorization
     prompt: string;
     success: boolean;
+
+}
+
+export class GenerateNewsWithAI {
+    topic: string;
+    numberOfArticles: number;
+    location: string;
+    success: boolean;
+    message?: string; 
+    prompt?: string;
 }
 
 export class GetNewsForAnalysisDto {
@@ -38,6 +49,21 @@ export class SimilarContentDto {
     summary: string;
     similarNewsContentIds?: String[]; 
     success: boolean;
+}
+
+export class GeneratedNewsStoryDto {
+    title: string;
+    summary: string;
+    publishedDate: string;
+    source: string;
+    location: string;
+    topic: string;
+}
+
+export class GenerateNewsWithAIResponseDto {
+    success: boolean;
+    message?: string;
+    stories?: GeneratedNewsStoryDto[];
 }
 
 

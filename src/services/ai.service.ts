@@ -3,7 +3,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { MinimalJokeDto } from "../dto/create-joke.dto";
 import { AiCheckDto, AiCheckResponseDto } from "../dto/check-integrity.dto";
 import axios from "axios";
-import { CreateNewsDto, SimilarContentDto } from "src/dto/news.dto";
+import { CreateNewsDto, SimilarContentDto, GenerateNewsWithAI, GenerateNewsWithAIResponseDto } from "src/dto/news.dto";
 
 @Injectable()
 export class AIService {
@@ -169,6 +169,77 @@ export class AIService {
       return {
         success: false,
         message: "something went wrong with the AI service",
+      };
+    }
+  }
+
+  async generateNewsWithAI(dto: GenerateNewsWithAI): Promise<GenerateNewsWithAIResponseDto> {
+    console.log("AI Service: Generating news with AI");
+    try {
+      const ollama_url = process.env.OLLAMA_URL;
+      const aiModelName = process.env.AIMODELNAME || "llama3.2:3b";
+
+      const response = await axios.post(`${ollama_url}/api/generate`, {
+        model: aiModelName,
+        prompt: dto.prompt,
+        temperature: 0.7,
+        max_tokens: 2000,
+        stream: false,
+      });
+
+      if (response.status === 200 || response.statusText === "OK") {
+        const aiResponse = response.data.response;
+        console.log("Raw AI response:", aiResponse);
+
+        // Extract JSON array from response
+        const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) {
+          throw new Error("Could not find valid JSON array in AI response");
+        }
+
+        const jsonString = jsonMatch[0];
+        console.log("Extracted JSON string:", jsonString);
+
+        try {
+          const stories = JSON.parse(jsonString);
+          
+          // Validate the structure
+          if (!Array.isArray(stories)) {
+            throw new Error("AI response is not an array");
+          }
+
+          // Validate each story has required fields
+          const validStories = stories.filter(story => 
+            story.title && story.summary && story.publishedDate && 
+            story.source && story.location && story.topic
+          );
+
+          if (validStories.length === 0) {
+            throw new Error("No valid stories found in AI response");
+          }
+
+          return {
+            success: true,
+            message: `Successfully generated ${validStories.length} news stories`,
+            stories: validStories,
+          };
+        } catch (parseError) {
+          console.error("Failed to parse AI response as JSON:", parseError);
+          return {
+            success: false,
+            message: "Failed to parse AI response",
+            stories: [],
+          };
+        }
+      } else {
+        throw new Error(`AI service returned status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error in AI service generateNewsWithAI:", error);
+      return {
+        success: false,
+        message: "Error calling AI service",
+        stories: [],
       };
     }
   }

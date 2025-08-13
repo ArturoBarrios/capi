@@ -40,7 +40,7 @@ model NewsContent {
   updatePrompt String?
   pointsPrompt String?
   ignoreNews   News[]       @relation("CheckedNews")
-  posts        Post[]       @relation("Post")
+  posts        Post[]       @relation("Post")  
 }
 
 model SubContent {
@@ -64,6 +64,7 @@ model News {
   updatedAt   DateTime?     @updatedAt
   newsContent NewsContent[] @relation("NewsToNewsContent")
   checkedNews NewsContent[] @relation("CheckedNews")
+  topic       String? // This is the topic of the news, e.g., "politics", "sports", etc.
   // relevant Int @default(0) //how relevant is this right now
 }
 

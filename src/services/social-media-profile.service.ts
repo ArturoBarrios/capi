@@ -52,4 +52,65 @@ export class SocialMediaProfileService {
     
     return result;
   }
+
+  async deletePost(postId: string): Promise<string> {
+    console.log("Deleting post with ID:", postId);
+    try {
+      // Check if post exists
+      const post = await this.prisma.post.findUnique({
+        where: { id: postId },
+      });
+
+      if (!post) {
+        throw new Error("Post not found");
+      }
+
+      // Delete the post
+      await this.prisma.post.delete({
+        where: { id: postId },
+      });
+
+      console.log("Post deleted successfully:", postId);
+      return "Post deleted successfully";
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      throw new Error("Error deleting post");
+    }
+  }
+
+  async deletePostAndAccount(postId: string): Promise<string> {
+    console.log("Deleting post and social media account for post ID:", postId);
+    try {
+      // First, get the post with its social media account
+      const post = await this.prisma.post.findUnique({
+        where: { id: postId },
+        include: {
+          socialMediaAccount: true,
+        },
+      });
+
+      if (!post) {
+        throw new Error("Post not found");
+      }
+
+      const socialMediaAccountId = post.socialMediaAccountId;
+
+      // Delete the post first
+      await this.prisma.post.delete({
+        where: { id: postId },
+      });
+      console.log("Post deleted successfully:", postId);
+
+      // Then delete the social media account
+      await this.prisma.socialMediaAccount.delete({
+        where: { id: socialMediaAccountId },
+      });
+      console.log("Social media account deleted successfully:", socialMediaAccountId);
+
+      return "Post and social media account deleted successfully";
+    } catch (error) {
+      console.error("Error deleting post and social media account:", error);
+      throw new Error("Error deleting post and social media account");
+    }
+  }
 }

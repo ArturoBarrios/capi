@@ -9,7 +9,10 @@ import {
   GetNewsForAnalysisDto,
   NewsDto,
   SimilarContentDto,
+  GenerateNewsWithAI,
+  GenerateNewsWithAIResponseDto,
 } from "src/dto/news.dto";
+import { AIService } from "src/services/ai.service";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -19,7 +22,10 @@ export class NewsService {
   newsService: NewsService;
   private readonly aiModelName = process.env.AIMODELNAME || "llama3.2:3b"; // Fallback to default
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private aiService: AIService
+  ) {}
 
   async getSingularNews(id: string): Promise<NewsDto> {
     try {
@@ -356,7 +362,7 @@ export class NewsService {
             const newsContent = await this.prisma.newsContent.create({
               data: {
                 title: newsDto.aiTitle,
-                summary: newsDto.aiSummary,
+                summary: newsDto.aiSummary,                
                 news: {
                   connect: { id: newsDto.id }, // Connect to the original News article
                 },
@@ -419,8 +425,14 @@ export class NewsService {
         where: whereClause,
         include: {
           subContent: true,
+          news: {
+            select: {
+              id: true,              
+              topic: true,              
+            }
+          },
           posts: {
-            include: {
+            include: {              
               socialMediaAccount: {
                 select: {
                   username: true,
@@ -434,6 +446,7 @@ export class NewsService {
           createdAt: "desc",
         },
       });
+      
       const resultNewsContentDto: GetNewsContentDto = {
         success: true,
         message: "News content fetched successfully",
@@ -495,6 +508,7 @@ export class NewsService {
           content: newsDto.content,
           aiTitle: newsDto.aiTitle,
           aiSummary: newsDto.aiSummary,
+          topic: newsDto.topic, // Optional topic field
         },
       });
       console.log("News created successfully:", newsDto.title);
@@ -550,6 +564,7 @@ export class NewsService {
         where: { id: newsContentId },
         include: {
           subContent: true,
+          posts: true, // Include posts to check if any exist
         },
       });
 
@@ -557,7 +572,19 @@ export class NewsService {
         throw new Error("News content not found");
       }
 
-      // First delete all associated subcontent
+      // First delete all associated posts
+      if (newsContent.posts.length > 0) {
+        await this.prisma.post.deleteMany({
+          where: {
+            newsContentId: newsContentId,
+          },
+        });
+        console.log(
+          `Deleted ${newsContent.posts.length} post records`
+        );
+      }
+
+      // Then delete all associated subcontent
       if (newsContent.subContent.length > 0) {
         await this.prisma.subContent.deleteMany({
           where: {
@@ -569,13 +596,13 @@ export class NewsService {
         );
       }
 
-      // Then delete the news content
+      // Finally delete the news content
       await this.prisma.newsContent.delete({
         where: { id: newsContentId },
       });
 
       console.log("News content deleted successfully:", newsContentId);
-      return "News content and associated subcontent deleted successfully";
+      return "News content, associated posts, and subcontent deleted successfully";
     } catch (error) {
       console.error("Error deleting news content:", error);
       throw new Error("Error deleting news content");
@@ -616,6 +643,115 @@ export class NewsService {
       return "";
     } catch (error) {
       return "Error checking news integrity";
+    }
+  }
+
+  //using this now
+  async generateNewsWithAI(dto: GenerateNewsWithAI): Promise<GenerateNewsWithAIResponseDto> {
+    console.log("Generating news with AI for topic:", dto.topic, "location:", dto.location);
+    try {
+      const prompt = `You are a news aggregator AI. Find and create ${dto.numberOfArticles} recent news articles from this week about "${dto.topic}" specifically related to "${dto.location}".
+
+Requirements:
+- All articles must be from the current week (August 5-12, 2025)
+- Focus specifically on "${dto.topic}" in the context of "${dto.location}"
+- Create realistic, summary of articles with proper journalism structure
+- Each article should have a title, no more than 10 words, summary of no more than 75 words
+- Include diverse perspectives and sources
+- Make content engaging and informative
+
+For each article, provide:
+- Simulated publication date within this week
+- A realistic news source name
+
+Return ONLY a valid JSON array with this exact structure:
+[
+  {
+    "title": "Compelling headline here",
+    "summary": "Brief summary capturing the essence of the story",
+    "publishedDate": "2025-08-12",
+    "source": "Local News Source Name",
+    "location": "${dto.location}",
+    "topic": "${dto.topic}"
+  }
+]
+
+Ensure the JSON is valid and can be parsed directly.`;
+
+      const generateRequest: GenerateNewsWithAI = {
+        ...dto,
+        prompt,
+        success: false,
+      };
+
+      const result = await this.aiService.generateNewsWithAI(generateRequest);
+      console.log("AI generated news responseeeeee:", result);
+
+      // Create news articles in database
+      if (result.success && result.stories && result.stories.length > 0) {
+        console.log(`Saving ${result.stories.length} generated articles to database...`);
+        
+        for (const article of result.stories) {
+          const newsDto: CreateNewsDto = {
+            title: article.title,
+            summary: article.summary,
+            content: "",
+            aiTitle: article.title,
+            aiSummary: article.summary,
+            prompt: prompt,
+            success: true,
+            topic: article.topic,
+          };
+          
+          try {
+            const createResult = await this.createNews(newsDto);
+            console.log(`Successfully saved article: ${article.title}`);
+            
+            // Get the created news article ID and generate content
+            const createdNews = await this.prisma.news.findFirst({
+              where: {
+                title: article.title,
+                aiTitle: article.title,
+                aiSummary: article.summary,                
+              },
+              orderBy: {
+                createdAt: 'desc'
+              }
+            });
+            
+            if (createdNews) {
+              console.log(`Generating content for article: ${article.title} (ID: ${createdNews.id})`);
+              const getNewsForAnalysisDto: GetNewsForAnalysisDto = {
+                id: createdNews.id,
+                success: true
+              };
+              
+              try {
+                await this.generateContent(getNewsForAnalysisDto);
+                console.log(`Content generation completed for article: ${article.title}`);
+              } catch (contentError) {
+                console.error(`Failed to generate content for article "${article.title}":`, contentError);
+              }
+            } else {
+              console.error(`Could not find created news article: ${article.title}`);
+            }
+            
+          } catch (createError) {
+            console.error(`Failed to save article "${article.title}":`, createError);
+          }
+        }
+        
+        console.log("Finished saving generated articles to database and generating content");
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Error generating news with AI:", error);
+      return {
+        success: false,
+        message: "Error generating news with AI",
+        stories: [],
+      };
     }
   }
 }

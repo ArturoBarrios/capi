@@ -1,6 +1,6 @@
 // src/auth/auth.controller.ts
 import { Controller, Post, Body, Get } from "@nestjs/common";
-import { CreateNewsDto, GetNewsContentDto, GetNewsForAnalysisDto, NewsDto, SimilarContentDto } from "src/dto/news.dto";
+import { CreateNewsDto, GetNewsContentDto, GetNewsForAnalysisDto, NewsDto, SimilarContentDto, GenerateNewsWithAI } from "src/dto/news.dto";
 import { NewsService } from "src/services/news.service";
 import { AIService } from "src/services/ai.service";
 import { PrismaService } from "src/prisma/prisma.service";
@@ -107,6 +107,42 @@ export class NewsController {
     }
     console.log("Generating news for analysis with ID:", generateNewsDto.id);
     this.newsService.generateContent(generateNewsDto);
+  }
+
+  @Post("generate-news-with-ai")
+  async generateNewsWithAI(@Body() body: GenerateNewsWithAI) {
+    console.log("Generating news with AI...");
+    try {
+      const generateNewsDto: GenerateNewsWithAI = {
+        topic: body.topic,
+        numberOfArticles: body.numberOfArticles,
+        location: body.location,
+        success: false,
+      };
+
+      const result = await this.newsService.generateNewsWithAI(generateNewsDto);
+      
+      if (result.success) {
+        return {
+          success: true,
+          message: result.message,
+          stories: result.stories,
+        };
+      } else {
+        return {
+          success: false,
+          message: result.message || "Failed to generate news with AI",
+          stories: [],
+        };
+      }
+    } catch (error) {
+      console.error("Error in generateNewsWithAI controller:", error);
+      return {
+        success: false,
+        message: "Error generating news with AI",
+        stories: [],
+      };
+    }
   }
 
   
@@ -266,4 +302,6 @@ export class NewsController {
 
     //returns information, can nudge scraper to do more work
   }
+
+  
 }
